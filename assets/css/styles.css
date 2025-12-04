@@ -45,6 +45,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
+  position: relative; /* added */
 }
 
 .brand {
@@ -58,13 +59,10 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  background: radial-gradient(circle at 30% 30%, #ffedd5, #f97316);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: #ffffff;
+  object-fit: cover;
+  display: block;
 }
+
 
 .brand-text {
   font-size: 1.1rem;
@@ -75,7 +73,9 @@ body {
 .nav {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap; /* helps on mid-size screens */
 }
+
 
 .nav a {
   text-decoration: none;
@@ -86,6 +86,28 @@ body {
 .nav a:hover {
   color: #111827;
 }
+
+/* Hamburger button (hidden on desktop by default) */
+.nav-toggle {
+  display: none; /* show only on mobile via media query */
+  border: none;
+  background: transparent;
+  padding: 0.25rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Two small bars inside the hamburger */
+.nav-toggle-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  background: #111827;
+  margin: 3px 0;
+}
+
 
 /* Main */
 main {
@@ -248,4 +270,32 @@ main {
 .muted {
   color: #6b7280;
   font-size: 0.85rem;
+}
+
+/* Mobile navigation (burger menu) */
+@media (max-width: 640px) {
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  .nav {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    background: #ffffff;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 1.5rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: none; /* hidden by default on mobile */
+  }
+
+  .nav a {
+    padding: 0.25rem 0;
+  }
+
+  .nav.nav-open {
+    display: flex; /* shown when JS toggles .nav-open */
+  }
 }
