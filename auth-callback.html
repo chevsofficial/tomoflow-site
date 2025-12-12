@@ -38,6 +38,14 @@
       color: #cbd5f5;
     }
 
+    .details {
+      font-size: 13px;
+      opacity: 0.75;
+      margin-top: -12px;
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+
     a.button {
       display: inline-block;
       padding: 12px 18px;
@@ -52,11 +60,14 @@
 <body>
 
   <div class="card">
-    <h1>Account verified ✅</h1>
-    <p>
+    <h1 id="title">Account verified ✅</h1>
+
+    <p id="message">
       Your account has been successfully verified.<br />
       You can now return to the TomoFlow app.
     </p>
+
+    <div id="details" class="details"></div>
 
     <a class="button" href="tomoflow://auth-callback">
       Open TomoFlow
@@ -68,11 +79,44 @@
       return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     }
 
+    function parseHashParams() {
+      const hash = window.location.hash.startsWith('#')
+        ? window.location.hash.slice(1)
+        : '';
+      const params = new URLSearchParams(hash);
+      return {
+        error: params.get('error'),
+        error_code: params.get('error_code'),
+        error_description: params.get('error_description'),
+      };
+    }
+
+    const titleEl = document.getElementById('title');
+    const messageEl = document.getElementById('message');
+    const detailsEl = document.getElementById('details');
+
+    const { error_code, error_description } = parseHashParams();
+
+    // ⏰ Expired / already-used link
+    if (error_code) {
+      titleEl.textContent = "Link expired ⏰";
+      messageEl.innerHTML =
+        "This verification link is invalid, expired, or was already used.<br />" +
+        "Please return to TomoFlow and request a new verification email.";
+
+      if (error_description) {
+        detailsEl.textContent = decodeURIComponent(error_description);
+      }
+    } else {
+      // ✅ Verified state
+      detailsEl.textContent = "";
+    }
+
+    // 📱 Auto-open app on mobile (safe delay, no desktop flash)
     if (isMobile()) {
-      // Attempt to open the app automatically
       setTimeout(() => {
         window.location.href = "tomoflow://auth-callback";
-      }, 200);
+      }, 600);
     }
   </script>
 
