@@ -70,7 +70,9 @@
 
     if (isMobile()) {
       // Attempt to open the app automatically
-      window.location.href = "tomoflow://auth-callback";
+      setTimeout(() => {
+        window.location.href = "tomoflow://auth-callback";
+      }, 200);
     }
   </script>
 
