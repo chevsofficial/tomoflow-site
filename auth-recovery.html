@@ -29,6 +29,19 @@
     }
     .card-dark p { color: #cbd5f5; }
 
+    .banner {
+      display: none;
+      margin: 14px 0 18px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.14);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #cbd5f5;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
     .form {
       margin-top: 18px;
       text-align: left;
@@ -64,11 +77,12 @@
       gap: 10px;
       flex-wrap: wrap;
       justify-content: center;
-      margin-top: 18px;
+      margin-top: 14px;
     }
 
-    .btn-deeplink,
-    .btn-primary {
+    .btn-primary,
+    .btn-secondary,
+    .btn-deeplink {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -81,6 +95,8 @@
       cursor: pointer;
       text-decoration: none;
       color: #ffffff;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .btn-primary {
@@ -92,6 +108,12 @@
       background: #6366f1;
     }
     .btn-deeplink:hover { filter: brightness(1.05); }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.18);
+      border-color: rgba(148, 163, 184, 0.25);
+      color: #e5e7eb;
+    }
 
     .hint {
       margin-top: 14px;
@@ -105,14 +127,8 @@
       font-size: 14px;
       color: #cbd5f5;
     }
-
-    .error {
-      color: #fca5a5;
-    }
-
-    .success {
-      color: #86efac;
-    }
+    .error { color: #fca5a5; }
+    .success { color: #86efac; }
   </style>
 </head>
 <body>
@@ -125,11 +141,17 @@
         Enter a new password below.
       </p>
 
-      <!-- Mobile: keep this as a good UX path -->
+      <!-- Mobile banner message -->
+      <div class="banner" id="mobileBanner"></div>
+
+      <!-- Mobile action row -->
       <div class="row" id="mobileRow" style="display:none;">
         <a class="btn-deeplink" id="openApp" href="tomoflow://auth-recovery">
           Open TomoFlow
         </a>
+        <button class="btn-secondary" id="retryBtn" type="button">
+          Try again
+        </button>
       </div>
 
       <!-- Desktop form -->
@@ -160,7 +182,7 @@
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    // ✅ TODO: Replace these with your real values from Supabase Project Settings → API
+    // ✅ TODO: Replace with your real values (Supabase Project Settings → API)
     const SUPABASE_URL = "https://zkstcywertzzooxefwuh.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inprc3RjeXdlcnR6em9veGVmd3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxOTcwMjYsImV4cCI6MjA3OTc3MzAyNn0.ippeFJsR93VTUxgEA4wSrYxAlhKS4NzUPoDHd4VSbCk";
 
@@ -183,70 +205,93 @@
     const titleEl = document.getElementById("title");
     const messageEl = document.getElementById("message");
     const hintEl = document.getElementById("hint");
+
     const formEl = document.getElementById("resetForm");
     const statusEl = document.getElementById("status");
     const submitBtn = document.getElementById("submitBtn");
+
+    const mobileBanner = document.getElementById("mobileBanner");
     const mobileRow = document.getElementById("mobileRow");
     const openAppEl = document.getElementById("openApp");
+    const retryBtn = document.getElementById("retryBtn");
 
     const { hash, access_token, refresh_token, error_code, error_description } = parseHashParams();
 
-    // Mobile deep link should preserve hash tokens so the app can complete recovery
+    // Build deep link, preserving the hash tokens so the app can complete recovery
     const deepLink = "tomoflow://auth-recovery" + (hash || "");
     if (openAppEl) openAppEl.setAttribute("href", deepLink);
 
-    // If Supabase says it’s expired/invalid, show that immediately
-    if (error_code) {
+    function showExpired(msg, details = "") {
       titleEl.textContent = "Link expired ⏰";
       messageEl.innerHTML =
+        msg ||
         "This password reset link is invalid, expired, or already used.<br/>" +
         "Please request a new reset email from TomoFlow.";
-      hintEl.textContent = error_description ? decodeURIComponent(error_description) : "";
+      hintEl.textContent = details || "";
       formEl.style.display = "none";
 
-      // still show Open App on mobile as a fallback
       if (isMobile()) {
+        mobileBanner.style.display = "block";
+        mobileBanner.textContent =
+          "Password reset detected. If TomoFlow doesn’t open automatically, tap “Open TomoFlow” below.";
         mobileRow.style.display = "flex";
       }
+    }
+
+    // Supabase error in hash (otp_expired etc)
+    if (error_code) {
+      showExpired(
+        "This password reset link is invalid, expired, or already used.<br/>" +
+        "Return to TomoFlow and request a new reset email.",
+        error_description ? decodeURIComponent(error_description) : ""
+      );
       throw new Error("Reset link invalid/expired");
     }
 
-    // If missing tokens, treat as invalid/expired
+    // Missing tokens
     if (!access_token || !refresh_token) {
-      titleEl.textContent = "Link invalid ⏰";
-      messageEl.innerHTML =
+      showExpired(
         "This password reset link is missing required tokens.<br/>" +
-        "Please request a new reset email from TomoFlow.";
-      hintEl.textContent = "";
-      formEl.style.display = "none";
-
-      if (isMobile()) {
-        mobileRow.style.display = "flex";
-      }
+        "Please request a new reset email from TomoFlow."
+      );
       throw new Error("Missing access_token/refresh_token");
     }
 
-    // Mobile UX: prefer opening the app, hide the web form (desktop uses the web form)
+    // Mobile UX: prefer app, and explain what's happening (auto-open may be blocked)
     if (isMobile()) {
+      mobileBanner.style.display = "block";
+      mobileBanner.innerHTML =
+        "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
+        "If you are not automatically redirected, tap the button below to continue.";
+
       mobileRow.style.display = "flex";
       formEl.style.display = "none";
-      hintEl.textContent = "If the app didn’t open automatically, tap “Open TomoFlow” above.";
-
-      setTimeout(() => {
-        window.location.href = deepLink;
-      }, 600);
-    } else {
-      // Desktop: show the form
-      formEl.style.display = "block";
-      mobileRow.style.display = "none";
       hintEl.textContent = "";
+
+      const attemptOpen = () => {
+        // Best-effort. Some browsers block this unless triggered by a user gesture.
+        window.location.href = deepLink;
+      };
+
+      // Try automatically after a moment
+      setTimeout(attemptOpen, 600);
+
+      // “Try again” uses a user gesture → more likely to work
+      retryBtn.addEventListener("click", attemptOpen);
+
+      // Stop here — don't run desktop form logic
+      throw new Error("Mobile flow: open app");
     }
 
-    // Create Supabase client in the browser
+    // Desktop: show the form and perform password update on web
+    formEl.style.display = "block";
+    mobileRow.style.display = "none";
+    mobileBanner.style.display = "none";
+    hintEl.textContent = "";
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function setSessionFromHash() {
-      // Sets the browser session so updateUser works
       const { error } = await supabase.auth.setSession({
         access_token,
         refresh_token,
@@ -280,7 +325,6 @@
 
       try {
         await setSessionFromHash();
-
         setStatus("Updating password…");
 
         const { error } = await supabase.auth.updateUser({ password: pw1 });
@@ -291,7 +335,7 @@
         formEl.style.display = "none";
         setStatus("", "success");
 
-        // Optional: clean the URL so tokens aren’t left in the address bar
+        // Remove tokens from the URL
         history.replaceState(null, "", "/auth-recovery");
 
       } catch (err) {
