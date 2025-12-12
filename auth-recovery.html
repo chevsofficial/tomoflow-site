@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/assets/css/styles.css" />
 
   <style>
-    /* Small page-specific helpers (still minimal, uses your global CSS base) */
+    /* Minimal page-specific styling */
     .center-wrap {
       min-height: 100vh;
       display: flex;
@@ -27,10 +27,48 @@
       text-align: center;
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
-    .card-dark p {
+    .card-dark p { color: #cbd5f5; }
+
+    .form {
+      margin-top: 18px;
+      text-align: left;
+    }
+    .field {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
       color: #cbd5f5;
     }
-    .btn-deeplink {
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(2, 6, 23, 0.6);
+      color: #e5e7eb;
+      outline: none;
+    }
+    input[type="password"]::placeholder {
+      color: rgba(148, 163, 184, 0.8);
+    }
+    input[type="password"]:focus {
+      border-color: rgba(99, 102, 241, 0.9);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 18px;
+    }
+
+    .btn-deeplink,
+    .btn-primary {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -39,20 +77,41 @@
       border-radius: 999px;
       border: 1px solid transparent;
       font-size: 0.95rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       text-decoration: none;
-      background: linear-gradient(135deg, #f97316, #ea580c);
       color: #ffffff;
     }
-    .btn-deeplink:hover {
-      filter: brightness(1.05);
+
+    .btn-primary {
+      background: linear-gradient(135deg, #f97316, #ea580c);
     }
+    .btn-primary:hover { filter: brightness(1.05); }
+
+    .btn-deeplink {
+      background: #6366f1;
+    }
+    .btn-deeplink:hover { filter: brightness(1.05); }
+
     .hint {
       margin-top: 14px;
       font-size: 13px;
       color: #94a3b8;
       word-break: break-word;
+    }
+
+    .status {
+      margin-top: 14px;
+      font-size: 14px;
+      color: #cbd5f5;
+    }
+
+    .error {
+      color: #fca5a5;
+    }
+
+    .success {
+      color: #86efac;
     }
   </style>
 </head>
@@ -62,58 +121,187 @@
     <div class="card-dark">
       <h1 id="title" style="margin-bottom: 12px; font-size: 26px;">Reset your password</h1>
 
-      <p id="message" style="margin-bottom: 24px; font-size: 16px; line-height: 1.5;">
-        To finish resetting your password, return to the TomoFlow app.
+      <p id="message" style="margin-bottom: 10px; font-size: 16px; line-height: 1.5;">
+        Enter a new password below.
       </p>
 
-      <!-- This link will be updated to include the hash tokens -->
-      <a class="btn-deeplink" id="openApp" href="tomoflow://auth-recovery">
-        Open TomoFlow
-      </a>
+      <!-- Mobile: keep this as a good UX path -->
+      <div class="row" id="mobileRow" style="display:none;">
+        <a class="btn-deeplink" id="openApp" href="tomoflow://auth-recovery">
+          Open TomoFlow
+        </a>
+      </div>
+
+      <!-- Desktop form -->
+      <form class="form" id="resetForm" style="display:none;">
+        <div class="field">
+          <label for="pw1">New password</label>
+          <input id="pw1" type="password" autocomplete="new-password" placeholder="Enter new password" required />
+        </div>
+
+        <div class="field">
+          <label for="pw2">Confirm password</label>
+          <input id="pw2" type="password" autocomplete="new-password" placeholder="Confirm new password" required />
+        </div>
+
+        <div class="row">
+          <button class="btn-primary" id="submitBtn" type="submit">
+            Set new password
+          </button>
+        </div>
+
+        <div class="status" id="status"></div>
+      </form>
 
       <div class="hint" id="hint"></div>
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    // ✅ TODO: Replace these with your real values from Supabase Project Settings → API
+    const SUPABASE_URL = "https://zkstcywertzzooxefwuh.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inprc3RjeXdlcnR6em9veGVmd3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxOTcwMjYsImV4cCI6MjA3OTc3MzAyNn0.ippeFJsR93VTUxgEA4wSrYxAlhKS4NzUPoDHd4VSbCk";
+
     function isMobile() {
       return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     }
 
-    // Supabase sends tokens in the URL hash (#access_token=... etc).
-    // Preserve them by forwarding into the custom scheme deep link.
-    const hash = window.location.hash || "";
-    const deepLink = "tomoflow://auth-recovery" + hash;
-
-    const openAppEl = document.getElementById("openApp");
-    openAppEl.setAttribute("href", deepLink);
-
-    // Parse hash params for possible errors (expired link, already used, etc.)
-    const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
-    const errorCode = params.get("error_code");
-    const errorDesc = params.get("error_description");
+    function parseHashParams() {
+      const hash = window.location.hash || "";
+      const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+      return {
+        hash,
+        access_token: params.get("access_token"),
+        refresh_token: params.get("refresh_token"),
+        error_code: params.get("error_code"),
+        error_description: params.get("error_description"),
+      };
+    }
 
     const titleEl = document.getElementById("title");
     const messageEl = document.getElementById("message");
     const hintEl = document.getElementById("hint");
+    const formEl = document.getElementById("resetForm");
+    const statusEl = document.getElementById("status");
+    const submitBtn = document.getElementById("submitBtn");
+    const mobileRow = document.getElementById("mobileRow");
+    const openAppEl = document.getElementById("openApp");
 
-    if (errorCode) {
+    const { hash, access_token, refresh_token, error_code, error_description } = parseHashParams();
+
+    // Mobile deep link should preserve hash tokens so the app can complete recovery
+    const deepLink = "tomoflow://auth-recovery" + (hash || "");
+    if (openAppEl) openAppEl.setAttribute("href", deepLink);
+
+    // If Supabase says it’s expired/invalid, show that immediately
+    if (error_code) {
       titleEl.textContent = "Link expired ⏰";
       messageEl.innerHTML =
         "This password reset link is invalid, expired, or already used.<br/>" +
-        "Return to TomoFlow and request a new reset email.";
+        "Please request a new reset email from TomoFlow.";
+      hintEl.textContent = error_description ? decodeURIComponent(error_description) : "";
+      formEl.style.display = "none";
 
-      hintEl.textContent = errorDesc ? decodeURIComponent(errorDesc) : "";
-    } else {
-      hintEl.textContent = "";
-
-      // Optional: auto-attempt opening the app on mobile
+      // still show Open App on mobile as a fallback
       if (isMobile()) {
-        setTimeout(() => {
-          window.location.href = deepLink;
-        }, 600);
+        mobileRow.style.display = "flex";
       }
+      throw new Error("Reset link invalid/expired");
     }
+
+    // If missing tokens, treat as invalid/expired
+    if (!access_token || !refresh_token) {
+      titleEl.textContent = "Link invalid ⏰";
+      messageEl.innerHTML =
+        "This password reset link is missing required tokens.<br/>" +
+        "Please request a new reset email from TomoFlow.";
+      hintEl.textContent = "";
+      formEl.style.display = "none";
+
+      if (isMobile()) {
+        mobileRow.style.display = "flex";
+      }
+      throw new Error("Missing access_token/refresh_token");
+    }
+
+    // Mobile UX: prefer opening the app, hide the web form (desktop uses the web form)
+    if (isMobile()) {
+      mobileRow.style.display = "flex";
+      formEl.style.display = "none";
+      hintEl.textContent = "If the app didn’t open automatically, tap “Open TomoFlow” above.";
+
+      setTimeout(() => {
+        window.location.href = deepLink;
+      }, 600);
+    } else {
+      // Desktop: show the form
+      formEl.style.display = "block";
+      mobileRow.style.display = "none";
+      hintEl.textContent = "";
+    }
+
+    // Create Supabase client in the browser
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function setSessionFromHash() {
+      // Sets the browser session so updateUser works
+      const { error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (error) throw error;
+    }
+
+    function setStatus(text, kind = "info") {
+      statusEl.textContent = text;
+      statusEl.className = "status" + (kind === "error" ? " error" : kind === "success" ? " success" : "");
+    }
+
+    formEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const pw1 = document.getElementById("pw1").value;
+      const pw2 = document.getElementById("pw2").value;
+
+      if (pw1.length < 8) {
+        setStatus("Password must be at least 8 characters.", "error");
+        return;
+      }
+      if (pw1 !== pw2) {
+        setStatus("Passwords do not match.", "error");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Updating…";
+      setStatus("Setting session…");
+
+      try {
+        await setSessionFromHash();
+
+        setStatus("Updating password…");
+
+        const { error } = await supabase.auth.updateUser({ password: pw1 });
+        if (error) throw error;
+
+        titleEl.textContent = "Password updated ✅";
+        messageEl.innerHTML = "Your password has been successfully updated.<br/>You can now sign in.";
+        formEl.style.display = "none";
+        setStatus("", "success");
+
+        // Optional: clean the URL so tokens aren’t left in the address bar
+        history.replaceState(null, "", "/auth-recovery");
+
+      } catch (err) {
+        const msg = (err && err.message) ? err.message : "Something went wrong. Please request a new reset email.";
+        setStatus(msg, "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Set new password";
+      }
+    });
   </script>
 
 </body>
