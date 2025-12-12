@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Account verified</title>
+  <title>Reset your password</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Shared site styles -->
   <link rel="stylesheet" href="/assets/css/styles.css" />
 
   <style>
-    /* Small page-specific helpers */
+    /* Small page-specific helpers (still minimal, uses your global CSS base) */
     .center-wrap {
       min-height: 100vh;
       display: flex;
@@ -48,11 +48,9 @@
     .btn-deeplink:hover {
       filter: brightness(1.05);
     }
-    .details {
+    .hint {
+      margin-top: 14px;
       font-size: 13px;
-      opacity: 0.75;
-      margin-top: -12px;
-      margin-bottom: 20px;
       color: #94a3b8;
       word-break: break-word;
     }
@@ -62,18 +60,18 @@
 
   <div class="center-wrap">
     <div class="card-dark">
-      <h1 id="title" style="margin-bottom: 12px; font-size: 28px;">Account verified ✅</h1>
+      <h1 id="title" style="margin-bottom: 12px; font-size: 26px;">Reset your password</h1>
 
       <p id="message" style="margin-bottom: 24px; font-size: 16px; line-height: 1.5;">
-        Your account has been successfully verified.<br />
-        You can now return to the TomoFlow app.
+        To finish resetting your password, return to the TomoFlow app.
       </p>
 
-      <div id="details" class="details"></div>
-
-      <a class="btn-deeplink" id="openApp" href="tomoflow://auth-callback">
+      <!-- This link will be updated to include the hash tokens -->
+      <a class="btn-deeplink" id="openApp" href="tomoflow://auth-recovery">
         Open TomoFlow
       </a>
+
+      <div class="hint" id="hint"></div>
     </div>
   </div>
 
@@ -82,39 +80,37 @@
       return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     }
 
-    function parseHashParams() {
-      const hash = window.location.hash.startsWith('#')
-        ? window.location.hash.slice(1)
-        : '';
-      const params = new URLSearchParams(hash);
-      return {
-        error: params.get('error'),
-        error_code: params.get('error_code'),
-        error_description: params.get('error_description'),
-      };
-    }
+    // Supabase sends tokens in the URL hash (#access_token=... etc).
+    // Preserve them by forwarding into the custom scheme deep link.
+    const hash = window.location.hash || "";
+    const deepLink = "tomoflow://auth-recovery" + hash;
 
-    const titleEl = document.getElementById('title');
-    const messageEl = document.getElementById('message');
-    const detailsEl = document.getElementById('details');
+    const openAppEl = document.getElementById("openApp");
+    openAppEl.setAttribute("href", deepLink);
 
-    const { error_code, error_description } = parseHashParams();
+    // Parse hash params for possible errors (expired link, already used, etc.)
+    const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+    const errorCode = params.get("error_code");
+    const errorDesc = params.get("error_description");
 
-    if (error_code) {
+    const titleEl = document.getElementById("title");
+    const messageEl = document.getElementById("message");
+    const hintEl = document.getElementById("hint");
+
+    if (errorCode) {
       titleEl.textContent = "Link expired ⏰";
       messageEl.innerHTML =
-        "This verification link is invalid, expired, or was already used.<br />" +
-        "Please return to TomoFlow and request a new verification email.";
+        "This password reset link is invalid, expired, or already used.<br/>" +
+        "Return to TomoFlow and request a new reset email.";
 
-      if (error_description) {
-        detailsEl.textContent = decodeURIComponent(error_description);
-      }
+      hintEl.textContent = errorDesc ? decodeURIComponent(errorDesc) : "";
     } else {
-      detailsEl.textContent = "";
+      hintEl.textContent = "";
 
+      // Optional: auto-attempt opening the app on mobile
       if (isMobile()) {
         setTimeout(() => {
-          window.location.href = "tomoflow://auth-callback";
+          window.location.href = deepLink;
         }, 600);
       }
     }
