@@ -63,7 +63,7 @@
       background: rgba(2, 6, 23, 0.6);
       color: #e5e7eb;
       outline: none;
-      display: block; /* ensures global CSS can't hide it */
+      display: block; /* avoids global CSS surprises */
     }
     input[type="password"]::placeholder {
       color: rgba(148, 163, 184, 0.8);
@@ -158,7 +158,7 @@
         </button>
       </div>
 
-      <!-- Desktop reset form -->
+      <!-- Desktop reset form (hidden until tokens parsed) -->
       <form class="form" id="resetForm" style="display:none;">
         <div class="field">
           <label for="pw1">New password</label>
@@ -189,11 +189,11 @@
     </div>
   </div>
 
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    // ✅ TODO: Replace with your real values (Supabase Project Settings → API)
+  <script>
+    // ✅ Project URL provided in your instructions. Keep it as-is.
     const SUPABASE_URL = "https://zkstcywertzzooxefwuh.supabase.co";
+
+    // ✅ Replace with your Supabase anon public key (OK to be on a website).
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inprc3RjeXdlcnR6em9veGVmd3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxOTcwMjYsImV4cCI6MjA3OTc3MzAyNn0.ippeFJsR93VTUxgEA4wSrYxAlhKS4NzUPoDHd4VSbCk";
 
     function isMobile() {
@@ -208,11 +208,7 @@
       const hashParams = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
       const queryParams = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
 
-      const get = (k) => {
-        const hv = hashParams.get(k);
-        if (hv !== null && hv !== undefined && hv !== "") return hv;
-        return queryParams.get(k);
-      };
+      const get = (k) => hashParams.get(k) ?? queryParams.get(k);
 
       return {
         hash,
@@ -223,7 +219,6 @@
       };
     }
 
-    // Elements
     const titleEl = document.getElementById("title");
     const messageEl = document.getElementById("message");
     const hintEl = document.getElementById("hint");
@@ -237,109 +232,111 @@
     const openAppEl = document.getElementById("openApp");
     const retryBtn = document.getElementById("retryBtn");
 
-    // Visible fallback if anything breaks
-    window.addEventListener("error", () => {
-      if (statusEl) {
-        statusEl.textContent = "This page failed to load the reset form. Please try again or open TomoFlow.";
-        statusEl.className = "status error";
-      }
-    });
-
-    const { hash, access_token, refresh_token, error_code, error_description } = parseParams();
-
-    console.log("auth-recovery loaded", {
-      access_token: !!access_token,
-      refresh_token: !!refresh_token,
-      error_code
-    });
-
-    // Deep link should preserve hash tokens so the app can complete recovery
-    // If tokens are only in query, we still append the raw hash (if present).
-    const deepLink = "tomoflow://auth-recovery" + (hash || "");
-    if (openAppEl) openAppEl.setAttribute("href", deepLink);
-
-    function setStatus(text, kind = "info") {
+    function setStatus(text, kind) {
       if (!statusEl) return;
-      statusEl.textContent = text;
+      statusEl.textContent = text || "";
       statusEl.className =
         "status" + (kind === "error" ? " error" : kind === "success" ? " success" : "");
     }
 
-    function showMobileHelperBanner(textHtml) {
+    function showMobileBanner(html) {
       mobileBanner.style.display = "block";
-      mobileBanner.innerHTML = textHtml;
+      mobileBanner.innerHTML = html;
       mobileRow.style.display = "flex";
     }
 
-    function showExpiredUI(details = "") {
+    function showExpired(details) {
       titleEl.textContent = "Link expired ⏰";
       messageEl.innerHTML =
         "This password reset link is invalid, expired, or already used.<br/>" +
         "Please request a new reset email from TomoFlow.";
       hintEl.textContent = details || "";
-      formEl.style.display = "none";
+      if (formEl) formEl.style.display = "none";
+      setStatus("Please request a new reset email from the app.", "error");
 
       if (isMobile()) {
-        showMobileHelperBanner(
+        const deepLink = "tomoflow://auth-recovery" + (window.location.hash || "");
+        if (openAppEl) openAppEl.href = deepLink;
+
+        showMobileBanner(
           "<strong>Password reset detected.</strong> If TomoFlow doesn’t open automatically, tap “Open TomoFlow” below."
         );
-      } else {
-        // Desktop: still show a gentle hint
-        setStatus("Please request a new reset email from the app.", "error");
+
+        const attemptOpen = () => (window.location.href = deepLink);
+        setTimeout(attemptOpen, 150);
+        setTimeout(attemptOpen, 900);
+        if (retryBtn) retryBtn.addEventListener("click", attemptOpen);
       }
     }
 
-    // 1) If Supabase indicates expiration/invalid, show expired message and STOP.
-    if (error_code) {
-      const details = error_description ? decodeURIComponent(error_description) : "";
-      showExpiredUI(details);
-      return;
+    async function updatePassword(accessToken, newPassword) {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: newPassword }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg =
+          json?.msg ||
+          json?.message ||
+          json?.error_description ||
+          "Unable to reset password. Please request a new reset email.";
+        const err = new Error(msg);
+        err.status = res.status;
+        throw err;
+      }
+
+      return json;
     }
 
-    // 2) If missing tokens, show invalid/expired and STOP.
-    if (!access_token || !refresh_token) {
-      showExpiredUI("");
-      return;
-    }
+    (function init() {
+      const { hash, access_token, error_code, error_description } = parseParams();
 
-    // 3) Mobile flow: show banner, attempt deep link, show button, STOP. Never show desktop form.
-    if (isMobile()) {
-      showMobileHelperBanner(
-        "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
-        "If you are not automatically redirected, tap the button below to continue."
-      );
+      // Deep link must preserve hash tokens
+      const deepLink = "tomoflow://auth-recovery" + (hash || "");
+      if (openAppEl) openAppEl.href = deepLink;
 
-      const attemptOpen = () => { window.location.href = deepLink; };
+      // Expired/invalid link (Supabase: otp_expired etc)
+      if (error_code) {
+        showExpired(error_description ? decodeURIComponent(error_description) : "");
+        return;
+      }
 
-      // quick attempt + second attempt (sometimes helps)
-      setTimeout(attemptOpen, 150);
-      setTimeout(attemptOpen, 900);
+      // Missing token
+      if (!access_token) {
+        showExpired("Missing access token. Please request a new reset email.");
+        return;
+      }
 
-      retryBtn.addEventListener("click", attemptOpen);
+      // MOBILE: never show web form
+      if (isMobile()) {
+        showMobileBanner(
+          "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
+          "If you are not automatically redirected, tap the button below to continue."
+        );
 
-      // Hide form just in case
-      formEl.style.display = "none";
+        if (formEl) formEl.style.display = "none";
+        hintEl.textContent = "";
+
+        const attemptOpen = () => (window.location.href = deepLink);
+        setTimeout(attemptOpen, 150);
+        setTimeout(attemptOpen, 900);
+        if (retryBtn) retryBtn.addEventListener("click", attemptOpen);
+        return;
+      }
+
+      // DESKTOP: show form immediately when token is present
+      if (formEl) formEl.style.display = "block";
+      mobileBanner.style.display = "none";
+      mobileRow.style.display = "none";
       hintEl.textContent = "";
-      return;
-    }
-
-    // 4) Desktop flow: show the form and perform password update on the web.
-    formEl.style.display = "block";
-    mobileRow.style.display = "none";
-    mobileBanner.style.display = "none";
-    hintEl.textContent = "";
-
-    // Wrap the rest so any failure shows a visible fallback + Open App option
-    try {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      async function setSessionFromTokens() {
-        const { error } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
-        if (error) throw error;
-      }
 
       formEl.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -358,39 +355,34 @@
 
         submitBtn.disabled = true;
         submitBtn.textContent = "Updating…";
-        setStatus("Setting session…");
+        setStatus("Updating password…");
 
         try {
-          await setSessionFromTokens();
-          setStatus("Updating password…");
-
-          const { error } = await supabase.auth.updateUser({ password: pw1 });
-          if (error) throw error;
+          await updatePassword(access_token, pw1);
 
           titleEl.textContent = "Password updated ✅";
-          messageEl.innerHTML = "Your password has been successfully updated.<br/>You can now sign in.";
+          messageEl.innerHTML =
+            "Your password has been successfully updated.<br/>You can now sign in.";
+
           formEl.style.display = "none";
           setStatus("", "success");
 
-          // Remove tokens from the URL
+          // Remove tokens from URL
           history.replaceState(null, "", "/auth-recovery");
-
         } catch (err) {
-          const msg = (err && err.message) ? err.message : "Something went wrong. Please request a new reset email.";
-          setStatus(msg, "error");
+          // If token expired/used, treat as expired
+          const status = err && err.status;
+          if (status === 401 || status === 403) {
+            showExpired("Email link is invalid or has expired.");
+            return;
+          }
+          setStatus((err && err.message) || "Something went wrong. Please request a new reset email.", "error");
         } finally {
           submitBtn.disabled = false;
           submitBtn.textContent = "Set new password";
         }
       });
-
-    } catch (err) {
-      // If module/CDN/csp breaks, show fallback and Open App
-      formEl.style.display = "none";
-      showMobileHelperBanner("Unable to load the reset form. Please open TomoFlow to reset your password.");
-      hintEl.textContent = String((err && err.message) ? err.message : err);
-      return;
-    }
+    })();
   </script>
 
 </body>
