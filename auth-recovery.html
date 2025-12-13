@@ -17,6 +17,7 @@
       justify-content: center;
       padding: 24px;
     }
+
     .card-dark {
       background: #020617;
       color: #e5e7eb;
@@ -27,6 +28,7 @@
       text-align: center;
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
+
     .card-dark p { color: #cbd5f5; }
 
     .banner {
@@ -37,7 +39,7 @@
       background: rgba(99, 102, 241, 0.14);
       border: 1px solid rgba(99, 102, 241, 0.35);
       color: #cbd5f5;
-      text-align: left;
+      text-align: center;
       font-size: 14px;
       line-height: 1.4;
     }
@@ -46,31 +48,65 @@
       margin-top: 18px;
       text-align: left;
     }
+
     .field {
       margin-bottom: 14px;
     }
+
     label {
       display: block;
       font-size: 0.9rem;
       margin-bottom: 6px;
       color: #cbd5f5;
     }
-    input[type="password"] {
+
+    .pw-wrap {
+      position: relative;
+    }
+
+    input[type="password"],
+    input[type="text"].pw-input {
       width: 100%;
-      padding: 12px 12px;
+      padding: 12px 44px 12px 12px; /* right padding for icon button */
       border-radius: 10px;
       border: 1px solid rgba(148, 163, 184, 0.35);
       background: rgba(2, 6, 23, 0.6);
       color: #e5e7eb;
       outline: none;
-      display: block; /* avoids global CSS surprises */
+      display: block;
+      box-sizing: border-box;
     }
-    input[type="password"]::placeholder {
+
+    input[type="password"]::placeholder,
+    input[type="text"].pw-input::placeholder {
       color: rgba(148, 163, 184, 0.8);
     }
-    input[type="password"]:focus {
+
+    input[type="password"]:focus,
+    input[type="text"].pw-input:focus {
       border-color: rgba(99, 102, 241, 0.9);
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    .pw-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      padding: 6px;
+      cursor: pointer;
+      line-height: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pw-toggle img {
+      width: 22px;
+      height: 22px;
+      display: block;
     }
 
     .row {
@@ -121,16 +157,17 @@
       font-size: 13px;
       color: #94a3b8;
       word-break: break-word;
-      text-align: left;
+      text-align: center; /* per instruction */
     }
 
     .status {
       margin-top: 14px;
       font-size: 14px;
       color: #cbd5f5;
-      text-align: left;
+      text-align: center;
       white-space: pre-wrap;
     }
+
     .error { color: #fca5a5; }
     .success { color: #86efac; }
   </style>
@@ -158,16 +195,26 @@
         </button>
       </div>
 
-      <!-- Desktop reset form (hidden until tokens parsed) -->
+      <!-- Desktop reset form -->
       <form class="form" id="resetForm" style="display:none;">
         <div class="field">
           <label for="pw1">New password</label>
-          <input id="pw1" type="password" autocomplete="new-password" placeholder="Enter new password" required />
+          <div class="pw-wrap">
+            <input id="pw1" class="pw-input" type="password" autocomplete="new-password" placeholder="Enter new password" required />
+            <button type="button" class="pw-toggle" id="togglePw1" aria-label="Show password">
+              <img id="togglePw1Icon" src="/assets/img/icons/tomato-show.png" alt="" />
+            </button>
+          </div>
         </div>
 
         <div class="field">
           <label for="pw2">Confirm password</label>
-          <input id="pw2" type="password" autocomplete="new-password" placeholder="Confirm new password" required />
+          <div class="pw-wrap">
+            <input id="pw2" class="pw-input" type="password" autocomplete="new-password" placeholder="Confirm new password" required />
+            <button type="button" class="pw-toggle" id="togglePw2" aria-label="Show password">
+              <img id="togglePw2Icon" src="/assets/img/icons/tomato-show.png" alt="" />
+            </button>
+          </div>
         </div>
 
         <div class="row">
@@ -190,17 +237,19 @@
   </div>
 
   <script>
-    // ✅ Project URL provided in your instructions. Keep it as-is.
     const SUPABASE_URL = "https://zkstcywertzzooxefwuh.supabase.co";
 
-    // ✅ Replace with your Supabase anon public key (OK to be on a website).
+    // Public anon key is OK to use on a website
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inprc3RjeXdlcnR6em9veGVmd3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxOTcwMjYsImV4cCI6MjA3OTc3MzAyNn0.ippeFJsR93VTUxgEA4wSrYxAlhKS4NzUPoDHd4VSbCk";
+
+    const TOMATO_SHOW = "/assets/img/icons/tomato-show.png";
+    const TOMATO_HIDE = "/assets/img/icons/tomato-hide.png";
 
     function isMobile() {
       return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     }
 
-    // Parse BOTH hash and query params (some clients strip hash or convert to query)
+    // Parse BOTH hash and query params
     function parseParams() {
       const hash = window.location.hash || "";
       const search = window.location.search || "";
@@ -213,7 +262,6 @@
       return {
         hash,
         access_token: get("access_token"),
-        refresh_token: get("refresh_token"),
         error_code: get("error_code"),
         error_description: get("error_description"),
       };
@@ -245,14 +293,17 @@
       mobileRow.style.display = "flex";
     }
 
-    function showExpired(details) {
+    function showExpired() {
       titleEl.textContent = "Link expired ⏰";
       messageEl.innerHTML =
         "This password reset link is invalid, expired, or already used.<br/>" +
         "Please request a new reset email from TomoFlow.";
-      hintEl.textContent = details || "";
+
+      // Remove redundant lines per instruction
+      hintEl.textContent = "";
+      setStatus("", "");
+
       if (formEl) formEl.style.display = "none";
-      setStatus("Please request a new reset email from the app.", "error");
 
       if (isMobile()) {
         const deepLink = "tomoflow://auth-recovery" + (window.location.hash || "");
@@ -263,9 +314,27 @@
         );
 
         const attemptOpen = () => (window.location.href = deepLink);
-        setTimeout(attemptOpen, 150);
-        setTimeout(attemptOpen, 900);
+        setTimeout(attemptOpen, 3000);
+        setTimeout(attemptOpen, 4500);
         if (retryBtn) retryBtn.addEventListener("click", attemptOpen);
+      }
+    }
+
+    async function validateAccessToken(accessToken) {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        method: "GET",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        const msg = json?.message || json?.error_description || "Email link is invalid or has expired.";
+        const err = new Error(msg);
+        err.status = res.status;
+        throw err;
       }
     }
 
@@ -273,8 +342,8 @@
       const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         method: "PATCH",
         headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${accessToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ password: newPassword }),
@@ -296,6 +365,28 @@
       return json;
     }
 
+    function setupToggle(inputId, btnId, iconId) {
+      const input = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      const icon = document.getElementById(iconId);
+
+      if (!input || !btn || !icon) return;
+
+      const setUi = (visible) => {
+        input.type = visible ? "text" : "password";
+        icon.src = visible ? TOMATO_HIDE : TOMATO_SHOW;
+        btn.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      };
+
+      // default hidden
+      setUi(false);
+
+      btn.addEventListener("click", () => {
+        const visible = input.type === "password";
+        setUi(visible);
+      });
+    }
+
     (function init() {
       const { hash, access_token, error_code, error_description } = parseParams();
 
@@ -303,19 +394,19 @@
       const deepLink = "tomoflow://auth-recovery" + (hash || "");
       if (openAppEl) openAppEl.href = deepLink;
 
-      // Expired/invalid link (Supabase: otp_expired etc)
+      // Expired/invalid link provided by Supabase
       if (error_code) {
-        showExpired(error_description ? decodeURIComponent(error_description) : "");
+        showExpired();
         return;
       }
 
       // Missing token
       if (!access_token) {
-        showExpired("Missing access token. Please request a new reset email.");
+        showExpired();
         return;
       }
 
-      // MOBILE: never show web form
+      // MOBILE: banner visible first, then deep link at ~3s
       if (isMobile()) {
         showMobileBanner(
           "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
@@ -324,19 +415,25 @@
 
         if (formEl) formEl.style.display = "none";
         hintEl.textContent = "";
+        setStatus("", "");
 
         const attemptOpen = () => (window.location.href = deepLink);
-        setTimeout(attemptOpen, 150);
-        setTimeout(attemptOpen, 900);
+        setTimeout(attemptOpen, 3000);
+        setTimeout(attemptOpen, 4500);
         if (retryBtn) retryBtn.addEventListener("click", attemptOpen);
         return;
       }
 
-      // DESKTOP: show form immediately when token is present
+      // DESKTOP: show form immediately
       if (formEl) formEl.style.display = "block";
       mobileBanner.style.display = "none";
       mobileRow.style.display = "none";
       hintEl.textContent = "";
+      setStatus("", "");
+
+      // Enable toggles
+      setupToggle("pw1", "togglePw1", "togglePw1Icon");
+      setupToggle("pw2", "togglePw2", "togglePw2Icon");
 
       formEl.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -355,9 +452,12 @@
 
         submitBtn.disabled = true;
         submitBtn.textContent = "Updating…";
-        setStatus("Updating password…");
+        setStatus("Validating reset link…");
 
         try {
+          await validateAccessToken(access_token);
+
+          setStatus("Updating password…");
           await updatePassword(access_token, pw1);
 
           titleEl.textContent = "Password updated ✅";
@@ -367,13 +467,12 @@
           formEl.style.display = "none";
           setStatus("", "success");
 
-          // Remove tokens from URL
+          // remove tokens
           history.replaceState(null, "", "/auth-recovery");
         } catch (err) {
-          // If token expired/used, treat as expired
           const status = err && err.status;
           if (status === 401 || status === 403) {
-            showExpired("Email link is invalid or has expired.");
+            showExpired();
             return;
           }
           setStatus((err && err.message) || "Something went wrong. Please request a new reset email.", "error");
