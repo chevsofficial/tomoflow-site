@@ -175,7 +175,7 @@
       <!-- Mobile actions -->
       <div class="row" id="mobileRow" style="display:none;">
         <!-- Updated to path-style deep link -->
-        <a class="btn-deeplink" id="openApp" href="tomoflow:///auth">
+        <a class="btn-deeplink" id="openApp" href="tomoflow://auth-recovery">
           Open TomoFlow
         </a>
         <button class="btn-secondary" id="retryBtn" type="button">Try again</button>
@@ -188,7 +188,7 @@
           <div class="pw-wrap">
             <input id="pw1" class="pw-input" type="password" autocomplete="new-password" placeholder="Enter new password" required />
             <button type="button" class="pw-toggle" id="togglePw1" aria-label="Show password">
-              <img id="togglePw1Icon" src="/assets/icons/tomato-show.png" alt="" />
+              <img id="togglePw1Icon" src="/assets/img/icons/tomato-show.png" alt="" />
             </button>
           </div>
         </div>
@@ -198,7 +198,7 @@
           <div class="pw-wrap">
             <input id="pw2" class="pw-input" type="password" autocomplete="new-password" placeholder="Confirm new password" required />
             <button type="button" class="pw-toggle" id="togglePw2" aria-label="Show password">
-              <img id="togglePw2Icon" src="/assets/icons/tomato-show.png" alt="" />
+              <img id="togglePw2Icon" src="/assets/img/icons/tomato-show.png" alt="" />
             </button>
           </div>
         </div>
@@ -229,8 +229,8 @@
     const SUPABASE_URL = "https://zkstcywertzzooxefwuh.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inprc3RjeXdlcnR6em9veGVmd3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxOTcwMjYsImV4cCI6MjA3OTc3MzAyNn0.ippeFJsR93VTUxgEA4wSrYxAlhKS4NzUPoDHd4VSbCk";
 
-    const TOMATO_SHOW = "/assets/icons/tomato-show.png";
-    const TOMATO_HIDE = "/assets/icons/tomato-hide.png";
+    const TOMATO_SHOW = "/assets/img/icons/tomato-show.png";
+    const TOMATO_HIDE = "/assets/img/icons/tomato-hide.png";
 
     function isMobile() {
       return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -350,7 +350,7 @@
       const { hash, access_token, refresh_token, error_code } = parseParams();
 
       // Path-style deep link, preserve hash
-      const deepLink = "tomoflow:///auth-recovery" + (hash || "");
+      const deepLink = "tomoflow://auth-recovery" + (hash || "");
       if (openAppEl) openAppEl.href = deepLink;
 
       // Supabase expired in hash/query
