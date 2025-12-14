@@ -159,8 +159,8 @@
     .success { color: #86efac; }
   </style>
 </head>
-<body>
 
+<body>
   <div class="center-wrap">
     <div class="card-dark">
       <h1 id="title" style="margin-bottom: 12px; font-size: 26px;">Reset your password</h1>
@@ -174,7 +174,7 @@
 
       <!-- Mobile actions -->
       <div class="row" id="mobileRow" style="display:none;">
-        <a class="btn-deeplink" id="openApp" href="tomoflow:///auth-recovery">
+        <a class="btn-deeplink" id="openApp" href="tomoflow://auth-recovery">
           Open TomoFlow
         </a>
         <button class="btn-secondary" id="retryBtn" type="button">Try again</button>
@@ -203,9 +203,7 @@
         </div>
 
         <div class="row">
-          <button class="btn-primary" id="submitBtn" type="submit">
-            Set new password
-          </button>
+          <button class="btn-primary" id="submitBtn" type="submit">Set new password</button>
         </div>
 
         <div class="status" id="status"></div>
@@ -288,4 +286,186 @@
       mobileRow.style.display = "flex";
     }
 
-    // UPDATED: expired mobile copy + remove "Try again" + open
+    function setupToggle(inputId, btnId, iconId) {
+      const input = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      const icon = document.getElementById(iconId);
+      if (!input || !btn || !icon) return;
+
+      const setUi = (visible) => {
+        input.type = visible ? "text" : "password";
+        icon.src = visible ? TOMATO_HIDE : TOMATO_SHOW;
+        btn.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      };
+
+      setUi(false);
+      btn.addEventListener("click", () => {
+        const makeVisible = (input.type === "password");
+        setUi(makeVisible);
+      });
+    }
+
+    async function bootstrapSession(supabase, access_token, refresh_token) {
+      const code = getCodeParam();
+
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+        return data && data.session;
+      }
+
+      if (!access_token || !refresh_token) {
+        throw new Error("Missing access_token/refresh_token.");
+      }
+
+      const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (error) throw error;
+      return true;
+    }
+
+    // ✅ Updated: expired UI matches your desired behavior
+    function showExpiredUI() {
+      titleEl.textContent = "Link expired ⏰";
+      messageEl.innerHTML =
+        "This password reset link is invalid, expired, or already used.<br/>" +
+        "Please request a new reset email from TomoFlow.";
+
+      // Hide redundant details/status/form/hint
+      if (hintEl) {
+        hintEl.textContent = "";
+        hintEl.style.display = "none";
+      }
+      setStatus("", "");
+      if (formEl) formEl.style.display = "none";
+
+      // On mobile: show ONLY the Open button, no Try again, no extra banner copy
+      if (isMobile()) {
+        if (openAppEl) openAppEl.href = "tomoflow://forgot-password";
+        if (retryBtn) retryBtn.style.display = "none";
+
+        mobileBanner.style.display = "none"; // keep page clean (no extra banner)
+        mobileRow.style.display = "flex";
+      } else {
+        // Desktop expired: no extra buttons; keep it clean
+        mobileBanner.style.display = "none";
+        mobileRow.style.display = "none";
+      }
+    }
+
+    (function init() {
+      const { hash, access_token, refresh_token, error_code } = parseParams();
+
+      // Valid-link deep link to recovery screen (preserve hash)
+      const deepLink = "tomoflow://auth-recovery" + (hash || "");
+      if (openAppEl) openAppEl.href = deepLink;
+
+      // Expired/invalid from Supabase
+      if (error_code) {
+        showExpiredUI();
+        return;
+      }
+
+      // MOBILE: banner + slow redirect + button
+      if (isMobile()) {
+        // Ensure Try again is visible for valid links
+        if (retryBtn) retryBtn.style.display = "inline-flex";
+
+        showMobileBanner(
+          "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
+          "If you are not automatically redirected, tap the button below to continue."
+        );
+
+        if (formEl) formEl.style.display = "none";
+        if (hintEl) hintEl.style.display = "none";
+        setStatus("", "");
+
+        const attemptOpen = () => (window.location.href = deepLink);
+
+        // Keep your current delay behavior
+        setTimeout(attemptOpen, 3500);
+        setTimeout(attemptOpen, 4500);
+
+        if (retryBtn) retryBtn.addEventListener("click", attemptOpen);
+        return;
+      }
+
+      // DESKTOP: require either PKCE code or implicit tokens
+      const hasPkceCode = !!getCodeParam();
+      const hasImplicit = !!access_token && !!refresh_token;
+
+      if (!hasPkceCode && !hasImplicit) {
+        showExpiredUI();
+        return;
+      }
+
+      // Show form now
+      if (formEl) formEl.style.display = "block";
+      mobileBanner.style.display = "none";
+      mobileRow.style.display = "none";
+      if (hintEl) hintEl.style.display = "none";
+      setStatus("", "");
+
+      // Setup toggles
+      setupToggle("pw1", "togglePw1", "togglePw1Icon");
+      setupToggle("pw2", "togglePw2", "togglePw2Icon");
+
+      // Create supabase client (UMD global)
+      if (!window.supabase || !window.supabase.createClient) {
+        setStatus("Error: Supabase client failed to load. Please try again or open TomoFlow.", "error");
+        return;
+      }
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      formEl.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const pw1 = document.getElementById("pw1").value;
+        const pw2 = document.getElementById("pw2").value;
+
+        if (pw1.length < 8) {
+          setStatus("Error: Password must be at least 8 characters.", "error");
+          return;
+        }
+        if (pw1 !== pw2) {
+          setStatus("Error: Passwords do not match.", "error");
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Updating…";
+
+        try {
+          setStatus("Validating reset link…");
+          await bootstrapSession(supabase, access_token, refresh_token);
+
+          setStatus("Updating password…");
+          const { error: updErr } = await supabase.auth.updateUser({ password: pw1 });
+          if (updErr) throw updErr;
+
+          titleEl.textContent = "Password updated ✅";
+          messageEl.innerHTML = "Your password has been successfully updated.<br/>You can now sign in.";
+
+          formEl.style.display = "none";
+          setStatus("", "success");
+
+          // remove tokens/code from URL
+          history.replaceState(null, "", "/auth-recovery");
+        } catch (err) {
+          const msg =
+            (err && err.message) ||
+            (err && err.error_description) ||
+            (function () {
+              try { return JSON.stringify(err, null, 2); } catch (_) { return ""; }
+            })() ||
+            "Unknown error";
+
+          setStatus(`Error: ${msg}`, "error");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Set new password";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
