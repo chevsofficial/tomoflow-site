@@ -324,8 +324,17 @@
     }
 
 function setMobileOnlyView() {
+  // Valid-link mobile view should ONLY show the banner + Open button
+  if (titleEl) titleEl.style.display = "none";
+  if (messageEl) messageEl.style.display = "none";
   if (hintEl) hintEl.style.display = "none";
   setStatus("", "");
+
+  // Hide desktop-only UI
+  if (formEl) formEl.style.display = "none";
+
+  // Ensure banner row can show the Open button
+  if (mobileRow) mobileRow.style.display = "flex";
 }
 
     // ✅ Updated: expired UI matches your desired behavior
@@ -382,6 +391,8 @@ if (isMobile()) {
 
   // Only one button on mobile for valid links
   if (retryBtn) retryBtn.style.display = "none";
+  if (mobileRow) mobileRow.style.display = "flex";
+
 
   showMobileBanner(
     "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
