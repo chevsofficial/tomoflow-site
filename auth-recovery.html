@@ -323,6 +323,14 @@
       return true;
     }
 
+    function setMobileOnlyView() {
+  // Hide redundant title + body copy on mobile banner view
+  if (titleEl) titleEl.style.display = "none";
+  if (messageEl) messageEl.style.display = "none";
+  if (hintEl) hintEl.style.display = "none";
+  setStatus("", "");
+}
+
     // ✅ Updated: expired UI matches your desired behavior
     function showExpiredUI() {
       titleEl.textContent = "Link expired ⏰";
@@ -366,28 +374,29 @@
       }
 
       // MOBILE: banner + slow redirect + button
-      if (isMobile()) {
-        // Ensure Try again is visible for valid links
-        if (retryBtn) retryBtn.style.display = "inline-flex";
+if (isMobile()) {
+  // Hide redundant page chrome
+  setMobileOnlyView();
 
-        showMobileBanner(
-          "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
-          "If you are not automatically redirected, tap the button below to continue."
-        );
+  // Only one button on mobile for valid links
+  if (retryBtn) retryBtn.style.display = "none";
 
-        if (formEl) formEl.style.display = "none";
-        if (hintEl) hintEl.style.display = "none";
-        setStatus("", "");
+  showMobileBanner(
+    "<strong>Password reset detected.</strong> Redirecting to the app…<br/>" +
+    "If you are not automatically redirected, tap the button below to continue."
+  );
 
-        const attemptOpen = () => (window.location.href = deepLink);
+  if (formEl) formEl.style.display = "none";
 
-        // Keep your current delay behavior
-        setTimeout(attemptOpen, 3500);
-        setTimeout(attemptOpen, 4500);
+  const attemptOpen = () => (window.location.href = deepLink);
 
-        if (retryBtn) retryBtn.addEventListener("click", attemptOpen);
-        return;
-      }
+  setTimeout(attemptOpen, 3500);
+  setTimeout(attemptOpen, 4500);
+
+  // No retry button listener because we hide it
+  return;
+}
+
 
       // DESKTOP: require either PKCE code or implicit tokens
       const hasPkceCode = !!getCodeParam();
