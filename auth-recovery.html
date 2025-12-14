@@ -323,8 +323,7 @@
       return true;
     }
 
-    function setMobileOnlyView() {
-  // Hide redundant title + body copy on mobile banner view
+function setMobileOnlyView() {
   if (titleEl) titleEl.style.display = "none";
   if (messageEl) messageEl.style.display = "none";
   if (hintEl) hintEl.style.display = "none";
@@ -332,33 +331,39 @@
 }
 
     // ✅ Updated: expired UI matches your desired behavior
-    function showExpiredUI() {
-      titleEl.textContent = "Link expired ⏰";
-      messageEl.innerHTML =
-        "This password reset link is invalid, expired, or already used.<br/>" +
-        "Please request a new reset email from TomoFlow.";
+function showExpiredUI() {
+  titleEl.textContent = "Link expired ⏰";
+  messageEl.innerHTML =
+    "This password reset link is invalid, expired, or already used.<br/>" +
+    "Please request a new reset email from TomoFlow.";
 
-      // Hide redundant details/status/form/hint
-      if (hintEl) {
-        hintEl.textContent = "";
-        hintEl.style.display = "none";
-      }
-      setStatus("", "");
-      if (formEl) formEl.style.display = "none";
+  // Hide redundant details/status/form/hint
+  if (hintEl) {
+    hintEl.textContent = "";
+    hintEl.style.display = "none";
+  }
+  setStatus("", "");
+  if (formEl) formEl.style.display = "none";
 
-      // On mobile: show ONLY the Open button, no Try again, no extra banner copy
-      if (isMobile()) {
-        if (openAppEl) openAppEl.href = "tomoflow://forgot-password";
-        if (retryBtn) retryBtn.style.display = "none";
+  // Always hide the banner on expired (clean)
+  if (mobileBanner) mobileBanner.style.display = "none";
 
-        mobileBanner.style.display = "none"; // keep page clean (no extra banner)
-        mobileRow.style.display = "flex";
-      } else {
-        // Desktop expired: no extra buttons; keep it clean
-        mobileBanner.style.display = "none";
-        mobileRow.style.display = "none";
-      }
-    }
+  if (isMobile()) {
+    // Hide the “Reset your password / Enter a new password…” chrome
+    if (titleEl) titleEl.style.display = "none";
+    if (messageEl) messageEl.style.display = "none";
+
+    // Expired → send user to request a new reset email (not reset form)
+    if (openAppEl) openAppEl.href = "tomoflow:///forgot-password";
+
+    // Only show Open TomoFlow button
+    if (retryBtn) retryBtn.style.display = "none";
+    if (mobileRow) mobileRow.style.display = "flex";
+  } else {
+    // Desktop expired: no buttons
+    if (mobileRow) mobileRow.style.display = "none";
+  }
+}
 
     (function init() {
       const { hash, access_token, refresh_token, error_code } = parseParams();
