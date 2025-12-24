@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/auth-callback", "destination": "/auth-callback.html" },
     { "source": "/auth-recovery", "destination": "/auth-recovery.html" },
+    { "source": "/faq", "destination": "/faq.html" },
     { "source": "/index", "destination": "/index.html" },
     { "source": "/support", "destination": "/support.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
