@@ -1,0 +1,570 @@
+<!-- faq.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TomoFlow FAQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Shared site styles -->
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+
+  <style>
+    /* Page-only helpers (keeps look consistent with existing pages) */
+    .faq-search {
+      width: 100%;
+      max-width: 520px;
+      margin: 0.5rem auto 1.25rem;
+      padding: 0.75rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      outline: none;
+      font-size: 0.95rem;
+    }
+
+    details.faq {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 1rem 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    details.faq summary {
+      cursor: pointer;
+      font-weight: 600;
+      list-style: none;
+      outline: none;
+    }
+
+    /* Hide default marker */
+    details.faq summary::-webkit-details-marker { display: none; }
+
+    /* Custom caret */
+    details.faq summary::after {
+      content: "▾";
+      float: right;
+      color: #6b7280;
+      font-weight: 700;
+    }
+    details.faq[open] summary::after { content: "▴"; }
+
+    .faq-answer {
+      margin-top: 0.75rem;
+      color: #374151;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .faq-answer ul {
+      margin: 0.5rem 0 0.25rem;
+      padding-left: 1.25rem;
+    }
+
+    .faq-answer li { margin: 0.25rem 0; }
+
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin: 1rem 0 2rem;
+    }
+    .toc a {
+      text-decoration: none;
+      font-size: 0.9rem;
+      color: #111827;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+    }
+    .toc a:hover { background: #f3f4f6; }
+
+    .section-anchor {
+      scroll-margin-top: 90px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div id="siteHeader"></div>
+    <!-- Main -->
+    <main>
+      <div class="container">
+        <h1 class="page-title">Frequently Asked Questions</h1>
+        <p class="page-subtitle">
+          Quick answers about timers, tasks, analytics, accounts, and TomoFlow Pro.
+        </p>
+
+        <!-- Optional TOC -->
+        <div class="toc" aria-label="FAQ Sections">
+          <a href="#getting-started">Getting Started</a>
+          <a href="#timers">Timers & Sessions</a>
+          <a href="#tasks">Tasks & Activity Types</a>
+          <a href="#analytics">Analytics</a>
+          <a href="#accounts">Accounts & Data</a>
+          <a href="#pro">Free vs Pro</a>
+          <a href="#notifications">Notifications</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </div>
+
+        <!-- Search -->
+        <input
+          class="faq-search"
+          id="faqSearch"
+          type="search"
+          placeholder="Search FAQs… (e.g., tasks, activity types, export, sync)"
+          aria-label="Search FAQs"
+        />
+
+        <!-- Section 1 -->
+        <section class="page-section section-anchor" id="getting-started">
+          <h2>Section 1 – Getting Started</h2>
+
+          <details class="faq" data-q="what is tomoflow">
+            <summary>1. What is TomoFlow?</summary>
+            <div class="faq-answer">
+              TomoFlow is a focus and productivity app based on the Pomodoro Technique. It helps you break work into focused sessions with short breaks, manage tasks, and see how much real focus time you’re getting through simple analytics.
+            </div>
+          </details>
+
+          <details class="faq" data-q="pomodoro technique">
+            <summary>2. What is the Pomodoro Technique?</summary>
+            <div class="faq-answer">
+              The Pomodoro Technique is a time-management method where you work in focused blocks (traditionally 25 minutes), followed by short breaks (usually 5 minutes). After several cycles, you take a longer break. This structure helps improve focus, reduce mental fatigue, and avoid burnout.
+            </div>
+          </details>
+
+          <details class="faq" data-q="who is tomoflow for">
+            <summary>3. Who is TomoFlow for?</summary>
+            <div class="faq-answer">
+              TomoFlow is designed for students, remote workers, freelancers, and anyone who wants to focus better on deep work, studying, side projects, or daily tasks without getting overwhelmed.
+            </div>
+          </details>
+
+          <details class="faq" data-q="need an account offline use">
+            <summary>4. Do I need an account to use TomoFlow?</summary>
+            <div class="faq-answer">
+              No. You can fully use TomoFlow offline without creating an account.
+              Creating an account is optional and mainly used for cloud sync across devices.
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 2 -->
+        <section class="page-section section-anchor" id="timers">
+          <h2>Section 2 – Timers & Sessions</h2>
+
+          <details class="faq" data-q="how do sessions work">
+            <summary>5. How do Pomodoro sessions work in TomoFlow?</summary>
+            <div class="faq-answer">
+              You pick (or create) a task, start a focus session, work until the timer ends, and then take a break. TomoFlow logs:
+              <ul>
+                <li>The planned duration of the session (e.g., 25 minutes)</li>
+                <li>The actual time you spent (including pauses / resumes)</li>
+                <li>Whether the session was completed, skipped, or cancelled early</li>
+              </ul>
+              These logs feed into your analytics.
+            </div>
+          </details>
+
+          <details class="faq" data-q="change default work break durations pro">
+            <summary>6. Can I change the default work and break durations?</summary>
+            <div class="faq-answer">
+              Yes — you can customize your focus and break durations in Settings, <strong>but this is available only for TomoFlow Pro users</strong>. Free users use the default Pomodoro-style durations.
+            </div>
+          </details>
+
+          <details class="faq" data-q="pause resume end and save">
+            <summary>7. What happens if I pause the timer or finish early?</summary>
+            <div class="faq-answer">
+              If you pause and resume a session, TomoFlow still measures the elapsed time in the background, but <strong>your analytics track the planned focus time</strong> (to avoid inflated numbers caused by pauses).<br/><br/>
+              If you tap <strong>End &amp; Save</strong> before the timer finishes, TomoFlow records the <strong>exact focus time you completed</strong> (for example, ending at minute 10 of a 25-minute session logs 10 minutes).
+            </div>
+          </details>
+
+          <details class="faq" data-q="cancelled early not counted first 5 minutes">
+            <summary>8. Why did a session show as “Cancelled early (not counted)”?</summary>
+            <div class="faq-answer">
+              If you skip or cancel a work interval <strong>within the first 5 minutes</strong>, TomoFlow may label it as “Cancelled early (not counted)” and exclude it from your analytics so accidental starts don’t affect your stats.
+            </div>
+          </details>
+
+          <details class="faq" data-q="skipped session not in analytics">
+            <summary>9. Why doesn’t a skipped session show in my analytics?</summary>
+            <div class="faq-answer">
+              Very short, skipped sessions (e.g., cancelled in the first few minutes) are intentionally not counted as real focus time. This keeps your focus charts clean and only shows sessions where you actually worked for a meaningful stretch.
+            </div>
+          </details>
+
+          <details class="faq" data-q="keep app open notifications">
+            <summary>10. Do I need to keep the app open for the timer to work?</summary>
+            <div class="faq-answer">
+              No, but you should allow notifications. TomoFlow uses system notifications to remind you when a session or break ends, even if the app is in the background. If notifications aren’t working, check:
+              <ul>
+                <li>System notification permissions for TomoFlow</li>
+                <li>“Do Not Disturb” / Focus modes on your device</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 3 -->
+        <section class="page-section section-anchor" id="tasks">
+          <h2>Section 3 – Tasks, Activity Types & Limits</h2>
+
+          <details class="faq" data-q="create manage tasks export before delete">
+            <summary>11. How do I create and manage tasks?</summary>
+            <div class="faq-answer">
+              You can add tasks in the Tasks screen. Each task can be:
+              <ul>
+                <li>Created with a title (and optional details)</li>
+                <li>Edited after creation</li>
+                <li>Marked as Done</li>
+                <li>Deleted if you no longer need it (<strong>we recommend exporting your data before deleting tasks if you want to keep a record</strong>)</li>
+              </ul>
+              You can then start focus sessions directly from a task.
+            </div>
+          </details>
+
+          <details class="faq" data-q="task limit free pro 10 unlimited">
+            <summary>12. Is there a limit to how many tasks I can create?</summary>
+            <div class="faq-answer">
+              Yes. <strong>Free users can create up to 10 tasks.</strong><br/>
+              <strong>TomoFlow Pro includes unlimited tasks.</strong>
+            </div>
+          </details>
+
+          <details class="faq" data-q="activity types categorize">
+            <summary>13. What are Activity Types in TomoFlow?</summary>
+            <div class="faq-answer">
+              Activity Types let you categorize your work beyond just the task name. For example:
+              <ul>
+                <li>Deep Work</li>
+                <li>Admin / Email</li>
+                <li>Study</li>
+                <li>Creative</li>
+                <li>Meetings</li>
+              </ul>
+              This allows your analytics to show how much time you spend on each type of work, not just per individual task.
+            </div>
+          </details>
+
+          <details class="faq" data-q="activity type limit free 3 pro unlimited">
+            <summary>14. Is there a limit to how many Activity Types I can create?</summary>
+            <div class="faq-answer">
+              Yes. <strong>Free users can create up to 3 Activity Types.</strong><br/>
+              <strong>TomoFlow Pro includes unlimited Activity Types.</strong>
+            </div>
+          </details>
+
+          <details class="faq" data-q="no task no activity type selected other">
+            <summary>15. What happens if I run a session with no task or no Activity Type selected?</summary>
+            <div class="faq-answer">
+              If you start a work interval without selecting a task, or the task has no Activity Type set, TomoFlow automatically groups that time under a default Activity Type like “Other” in your analytics. This ensures all sessions are tracked and nothing gets lost.
+            </div>
+          </details>
+
+          <details class="faq" data-q="change activity type later">
+            <summary>16. Can I change a task’s Activity Type later?</summary>
+            <div class="faq-answer">
+              Yes. You can edit a task and change its Activity Type. Future sessions will use the updated Activity Type. Past analytics stay associated with whatever Activity Type was active at the time of the session.
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 4 -->
+        <section class="page-section section-anchor" id="analytics">
+          <h2>Section 4 – Analytics & Progress</h2>
+
+          <details class="faq" data-q="planned time actual time pause resume end save">
+            <summary>17. What’s the difference between Planned Time and Actual Time?</summary>
+            <div class="faq-answer">
+              <strong>Planned Time:</strong> the intended duration of the session (e.g., a 25-minute focus block).<br/>
+              <strong>Actual Time:</strong> elapsed time from start to finish including pauses (for example, a 25-minute plan could take 30 minutes if paused/resumed).<br/><br/>
+              <strong>Important:</strong> TomoFlow analytics primarily track <strong>Planned Time</strong> to measure real intended focus and avoid inflated numbers caused by pauses.
+              However, if you use <strong>End &amp; Save</strong>, analytics will record the <strong>actual completed focus time</strong> (e.g., ending at minute 10 logs 10 minutes).
+            </div>
+          </details>
+
+          <details class="faq" data-q="calculate focus time end and save">
+            <summary>18. How does TomoFlow calculate my focus time?</summary>
+            <div class="faq-answer">
+              Your focus time is based on completed work intervals where you actively ran the timer. Very short cancelled sessions are excluded.
+              If you tap <strong>End &amp; Save</strong>, TomoFlow counts the <strong>completed focus time up to that point</strong> (instead of the full planned session).
+            </div>
+          </details>
+
+          <details class="faq" data-q="actual time higher not tracked analytics">
+            <summary>19. Why does my Actual Time look higher than my planned session?</summary>
+            <div class="faq-answer">
+              If you pause and resume over multiple segments, the elapsed time can exceed the planned duration. This reflects real-world interruptions.<br/><br/>
+              <strong>Note:</strong> TomoFlow analytics do <strong>not</strong> use this “Actual Time” for focus totals. Focus totals are based on planned time (or End &amp; Save completed time).
+            </div>
+          </details>
+
+          <details class="faq" data-q="session missing from analytics">
+            <summary>20. Why is a session missing from my analytics?</summary>
+            <div class="faq-answer">
+              Possible reasons:
+              <ul>
+                <li>It was skipped very early and marked as not counted</li>
+                <li>It was a break-only interval (some views only show work intervals)</li>
+                <li>The app didn’t fully save the session due to being force-closed or low memory</li>
+              </ul>
+              If it keeps happening, you can contact support so we can investigate.
+            </div>
+          </details>
+
+          <details class="faq" data-q="activity types most time">
+            <summary>21. Can I see which Activity Types I spend the most time on?</summary>
+            <div class="faq-answer">
+              Yes. In the analytics screen you’ll see breakdowns by:
+              <ul>
+                <li>Total focus time</li>
+                <li>Task and/or Activity Type</li>
+                <li>Date range (today, week, month, etc., depending on the version)</li>
+              </ul>
+              This helps you understand where your real focus is going.
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 5 -->
+        <section class="page-section section-anchor" id="accounts">
+          <h2>Section 5 – Accounts, Sync & Data</h2>
+
+          <details class="faq" data-q="what syncs across devices">
+            <summary>22. What syncs across devices?</summary>
+            <div class="faq-answer">
+              If you create an account and enable cloud sync, TomoFlow can sync:
+              <ul>
+                <li>Tasks</li>
+                <li>Activity Types</li>
+                <li>Session history (focus logs)</li>
+                <li>Most key settings (depending on version)</li>
+              </ul>
+              This allows you to move between devices without losing your data.
+            </div>
+          </details>
+
+          <details class="faq" data-q="use offline">
+            <summary>23. Can I use TomoFlow offline?</summary>
+            <div class="faq-answer">
+              Yes. Core features like timers, tasks, and local analytics work offline. Sync-related features will update once you’re back online.
+            </div>
+          </details>
+
+          <details class="faq" data-q="delete account data">
+            <summary>24. How do I delete my account or data?</summary>
+            <div class="faq-answer">
+              Until an in-app delete option is added, you can email:
+              <ul>
+                <li><strong>support@tomoflow.app</strong></li>
+                <li>Subject: “Delete My Data”</li>
+              </ul>
+              We’ll process your request and delete your account and associated cloud data within a reasonable time, as described in the Privacy Policy.
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 6 -->
+        <section class="page-section section-anchor" id="pro">
+          <h2>Section 6 – Free vs Pro (TomoFlow Pro)</h2>
+
+          <details class="faq" data-q="free version included">
+            <summary>25. What’s included in the free version?</summary>
+            <div class="faq-answer">
+              The free version includes:
+              <ul>
+                <li>Pomodoro-style timer</li>
+                <li>Task creation and management (<strong>up to 10 tasks</strong>)</li>
+                <li>Activity Types (<strong>up to 3</strong>)</li>
+                <li>Core analytics (<strong>limited date range</strong>)</li>
+                <li><strong>No ads</strong> (TomoFlow does not include ads)</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="faq" data-q="pro unlocks unlimited tasks activity types cloud sync csv premium themes advanced analytics">
+            <summary>26. What does TomoFlow Pro unlock?</summary>
+            <div class="faq-answer">
+              TomoFlow Pro unlocks:
+              <ul>
+                <li>Unlimited tasks</li>
+                <li>Unlimited Activity Types</li>
+                <li>Cloud sync across devices</li>
+                <li>Export data to CSV</li>
+                <li>Premium themes</li>
+                <li>Advanced analytics with <strong>unlimited date range</strong></li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="faq" data-q="free trial pro">
+            <summary>27. Is there a free trial for TomoFlow Pro?</summary>
+            <div class="faq-answer">
+              Yes. The annual TomoFlow Pro plan includes a 7-day free trial (subject to App Store / Play Store rules). If you don’t want to continue, just cancel before the trial ends to avoid being charged.
+            </div>
+          </details>
+
+          <details class="faq" data-q="billing handled app store play store">
+            <summary>28. How is billing handled?</summary>
+            <div class="faq-answer">
+              All billing is handled by:
+              <ul>
+                <li>Apple App Store on iOS</li>
+                <li>Google Play Store on Android</li>
+              </ul>
+              You can manage or cancel your subscription in your store account settings. We don’t see or store your credit card details; subscription status is checked via a secure service (like RevenueCat).
+            </div>
+          </details>
+
+          <details class="faq" data-q="upgrade to pro required">
+            <summary>29. Do I have to upgrade to Pro to use the app?</summary>
+            <div class="faq-answer">
+              No. The free version is fully usable as a focus timer with basic tasks and analytics. Pro is for users who want:
+              <ul>
+                <li>Unlimited tasks and Activity Types</li>
+                <li>Cloud sync</li>
+                <li>CSV export</li>
+                <li>Premium themes</li>
+                <li>Analytics with an unlimited date range</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 7 -->
+        <section class="page-section section-anchor" id="notifications">
+          <h2>Section 7 – Notifications & Sound</h2>
+
+          <details class="faq" data-q="enable disable notifications">
+            <summary>30. How do I enable or disable notifications?</summary>
+            <div class="faq-answer">
+              On first launch, TomoFlow may ask for notification permission. If you denied it, you can re-enable notifications in your device settings under Notifications → TomoFlow. From inside the app, you can also adjust:
+              <ul>
+                <li>Sound on/off for session end</li>
+                <li>Vibration (if supported)</li>
+                <li>Volume or notification type (platform dependent)</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="faq" data-q="no alert when timer ends">
+            <summary>31. The timer ends but I don’t get any alert. What should I do?</summary>
+            <div class="faq-answer">
+              Check:
+              <ul>
+                <li>Device system notifications for TomoFlow are allowed</li>
+                <li>Your phone is not in Do Not Disturb / Focus mode that hides alerts</li>
+                <li>The app’s own notification/sound settings are enabled</li>
+              </ul>
+              If everything looks correct and it still doesn’t work, please contact support.
+            </div>
+          </details>
+        </section>
+
+        <!-- Section 8 -->
+        <section class="page-section section-anchor" id="troubleshooting">
+          <h2>Section 8 – Troubleshooting & Misc</h2>
+
+          <details class="faq" data-q="timer stops switch apps battery optimization">
+            <summary>32. The timer stops or behaves strangely when I switch apps. Why?</summary>
+            <div class="faq-answer">
+              Some devices are aggressive about battery saving and may limit background timers. Try:
+              <ul>
+                <li>Disabling battery optimization for TomoFlow (if your OS allows it)</li>
+                <li>Keeping the app in the recent apps list instead of force-closing it</li>
+                <li>Ensuring you’re on the latest app version</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="faq" data-q="stats wrong fix">
+            <summary>33. My stats don’t look right. How can I fix them?</summary>
+            <div class="faq-answer">
+              Double-check:
+              <ul>
+                <li>Whether very short sessions are excluded</li>
+                <li>If you changed time zones recently</li>
+                <li>If you edited tasks or Activity Types that were used heavily</li>
+              </ul>
+              If you still see something that looks off, take screenshots and email us at <strong>support@tomoflow.app</strong> so we can review and improve.
+            </div>
+          </details>
+
+          <details class="faq" data-q="new phone bring data over">
+            <summary>34. I got a new phone. How do I bring my data over?</summary>
+            <div class="faq-answer">
+              If you used TomoFlow with an account and cloud sync, just:
+              <ul>
+                <li>Install TomoFlow on your new device</li>
+                <li>Log in with the same account</li>
+              </ul>
+              Your synced tasks and history should appear. If you used TomoFlow without an account, your data stays on the old device only.
+            </div>
+          </details>
+        </section>
+
+        <p class="muted" style="text-align:center; margin-top: 1.5rem;">
+          Still need help? Email <strong>support@tomoflow.app</strong>.
+        </p>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="container">
+        <p>© <span id="year"></span> TomoFlow. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Mobile nav toggle (matches your site behavior)
+    (function () {
+      const navToggle = document.getElementById("navToggle");
+      const nav = document.getElementById("siteNav");
+      if (navToggle && nav) {
+        navToggle.addEventListener("click", () => nav.classList.toggle("nav-open"));
+      }
+      const y = document.getElementById("year");
+      if (y) y.textContent = String(new Date().getFullYear());
+    })();
+
+    // Simple FAQ search filter
+    (function () {
+      const input = document.getElementById("faqSearch");
+      const items = Array.from(document.querySelectorAll("details.faq"));
+
+      function normalize(s) {
+        return (s || "").toLowerCase().trim();
+      }
+
+      function matches(el, q) {
+        const summary = el.querySelector("summary")?.textContent || "";
+        const body = el.querySelector(".faq-answer")?.textContent || "";
+        const meta = el.getAttribute("data-q") || "";
+        const hay = normalize(summary + " " + body + " " + meta);
+        return hay.includes(q);
+      }
+
+      if (!input) return;
+
+      input.addEventListener("input", () => {
+        const q = normalize(input.value);
+        items.forEach((el) => {
+          el.style.display = !q || matches(el, q) ? "" : "none";
+        });
+      });
+    })();
+  </script>
+  
+  <script src="/assets/js/main.js"></script>
+  <script src="/assets/js/nav.js" defer></script>
+
+</body>
+</html>
