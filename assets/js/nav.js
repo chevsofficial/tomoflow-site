@@ -3,6 +3,7 @@
   const headerMount = document.getElementById("siteHeader");
   if (!headerMount) return;
 
+  // Single source of truth for nav links
   const links = [
     { href: "/", label: "Home" },
     { href: "/app", label: "Web App" },
@@ -15,55 +16,95 @@
   headerMount.innerHTML = `
     <header class="site-header">
       <div class="container site-header-inner">
-        <a href="/" class="brand">
+        <a href="/" class="brand" aria-label="TomoFlow Home">
           <img src="/assets/img/logo.svg" alt="TomoFlow logo" class="brand-logo" />
           <span class="brand-text">TomoFlow</span>
         </a>
 
-        <!-- ✅ Icon-based hamburger -->
-        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="siteNav">
+        <!-- Hamburger (button) -->
+        <button
+          class="nav-toggle"
+          id="navToggle"
+          type="button"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="drawerNav"
+        >
           ☰
         </button>
+      </div>
 
-        <nav class="nav" id="siteNav">
+      <!-- Backdrop -->
+      <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+
+      <!-- Side drawer -->
+      <aside class="drawer" id="drawer" aria-hidden="true">
+        <div class="drawer-header">
+          <span class="drawer-title">Menu</span>
+          <button class="drawer-close" id="drawerClose" type="button" aria-label="Close menu">✕</button>
+        </div>
+
+        <nav class="drawer-nav" id="drawerNav" aria-label="Site navigation">
           ${links.map(l => `<a href="${l.href}">${l.label}</a>`).join("")}
         </nav>
-      </div>
+      </aside>
     </header>
   `;
 
   const navToggle = document.getElementById("navToggle");
-  const nav = document.getElementById("siteNav");
-  if (!navToggle || !nav) return;
+  const drawer = document.getElementById("drawer");
+  const drawerNav = document.getElementById("drawerNav");
+  const backdrop = document.getElementById("drawerBackdrop");
+  const closeBtn = document.getElementById("drawerClose");
 
-  function setOpen(open) {
-    nav.classList.toggle("nav-open", open);
+  if (!navToggle || !drawer || !backdrop || !drawerNav || !closeBtn) return;
+
+  const setOpen = (open) => {
+    drawer.classList.toggle("is-open", open);
+    drawer.setAttribute("aria-hidden", open ? "false" : "true");
     navToggle.setAttribute("aria-expanded", open ? "true" : "false");
-  }
+
+    // Backdrop
+    backdrop.hidden = !open;
+
+    // Prevent background scroll when drawer is open
+    document.documentElement.classList.toggle("drawer-lock", open);
+    document.body.classList.toggle("drawer-lock", open);
+
+    if (open) {
+      // focus the first link for accessibility
+      const firstLink = drawerNav.querySelector("a");
+      if (firstLink) firstLink.focus({ preventScroll: true });
+    } else {
+      navToggle.focus({ preventScroll: true });
+    }
+  };
+
+  const toggle = () => setOpen(!drawer.classList.contains("is-open"));
 
   navToggle.addEventListener("click", (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    const isOpen = nav.classList.contains("nav-open");
-    setOpen(!isOpen);
+    toggle();
   });
 
-  // Close nav if user taps outside
-  document.addEventListener("click", (e) => {
-    if (!nav.classList.contains("nav-open")) return;
-    const target = e.target;
-    const clickedInside = nav.contains(target) || navToggle.contains(target);
-    if (!clickedInside) setOpen(false);
+  closeBtn.addEventListener("click", () => setOpen(false));
+  backdrop.addEventListener("click", () => setOpen(false));
+
+  // Close on ESC
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && drawer.classList.contains("is-open")) {
+      setOpen(false);
+    }
   });
 
-  // Close on any link click (nice mobile UX)
-  nav.querySelectorAll("a").forEach((a) => {
+  // Close on link click
+  drawerNav.querySelectorAll("a").forEach((a) => {
     a.addEventListener("click", () => setOpen(false));
   });
 
-  // Active link style
+  // Active link styling
   const path = window.location.pathname.replace(/\/$/, "") || "/";
-  nav.querySelectorAll("a").forEach((a) => {
+  drawerNav.querySelectorAll("a").forEach((a) => {
     const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
     if (href === path) {
       a.style.color = "var(--textPrimary)";

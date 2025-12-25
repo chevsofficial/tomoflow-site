@@ -337,3 +337,102 @@ a:hover { filter: brightness(1.1); }
     display: flex;
   }
 }
+
+/* === Side Drawer Navigation (mobile + optional desktop) === */
+
+/* Lock scrolling when drawer is open */
+.drawer-lock {
+  overflow: hidden !important;
+}
+
+/* Backdrop behind drawer */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 2000;
+}
+
+/* Drawer panel */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(86vw, 320px);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -20px 0 50px rgba(0,0,0,0.55);
+  z-index: 2100;
+
+  transform: translateX(105%);
+  transition: transform 220ms ease;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.drawer.is-open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-title {
+  font-weight: 900;
+  color: var(--textPrimary);
+}
+
+.drawer-close {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--textPrimary);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.drawer-close:hover {
+  filter: brightness(1.06);
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+}
+
+.drawer-nav a {
+  display: block;
+  text-decoration: none;
+  color: var(--textSecondary);
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 10px 10px;
+  border-radius: 12px;
+}
+
+.drawer-nav a:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--textPrimary);
+}
+
+/* Ensure hamburger is visible on mobile */
+@media (max-width: 640px) {
+  .nav-toggle {
+    display: inline-flex !important;
+  }
+}
