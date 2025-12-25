@@ -1,5 +1,23 @@
 /* assets/css/styles.css */
 
+/* === TomoFlow Dark Theme (matches app) === */
+:root {
+  --primary: #FF5A5F;
+  --accent: #00A896;
+
+  --bg: #121417;
+  --surface: #1E2126;
+  --surfaceAlt: #2A2E35;
+
+  --textPrimary: #FFFFFF;
+  --textSecondary: #A0A5B1;
+  --textMuted: #7A7F8B;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --danger: #FF6B6B;
+  --shadow: rgba(0, 0, 0, 0.65);
+}
+
 /* Basic reset */
 *,
 *::before,
@@ -9,15 +27,13 @@
   padding: 0;
 }
 
-html {
-  font-size: 16px;
-}
+html { font-size: 16px; }
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.6;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--textPrimary);
+  background: var(--bg);
 }
 
 /* Layout */
@@ -36,8 +52,8 @@ body {
 
 /* Header & Nav */
 .site-header {
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .site-header-inner {
@@ -45,7 +61,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  position: relative; /* added */
+  position: relative;
 }
 
 .brand {
@@ -55,59 +71,61 @@ body {
   text-decoration: none;
 }
 
+/* ✅ Fix iPhone “foggy” logo: avoid round mask + reduce blur */
 .brand-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  object-fit: cover;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;       /* was 999px */
+  object-fit: contain;      /* better for svg */
   display: block;
+  background: transparent;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
-
 
 .brand-text {
   font-size: 1.1rem;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 700;
+  color: var(--textPrimary);
 }
 
 .nav {
   display: flex;
   gap: 1rem;
-  flex-wrap: wrap; /* helps on mid-size screens */
+  flex-wrap: wrap;
 }
-
 
 .nav a {
   text-decoration: none;
-  color: #4b5563;
+  color: var(--textSecondary);
   font-size: 0.95rem;
 }
 
 .nav a:hover {
-  color: #111827;
+  color: var(--textPrimary);
 }
 
 /* Hamburger button (hidden on desktop by default) */
 .nav-toggle {
-  display: none; /* show only on mobile via media query */
+  display: none;
   border: none;
   background: transparent;
   padding: 0.25rem;
   cursor: pointer;
   align-items: center;
   justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Two small bars inside the hamburger */
+/* ✅ Ensure 3 visible lines */
 .nav-toggle-bar {
   display: block;
-  width: 20px;
+  width: 22px;
   height: 2px;
   border-radius: 999px;
-  background: #111827;
-  margin: 3px 0;
+  background: var(--textPrimary);
+  margin: 4px 0;
 }
-
 
 /* Main */
 main {
@@ -117,9 +135,9 @@ main {
 
 /* Footer */
 .site-footer {
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
-  color: #6b7280;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--textMuted);
   font-size: 0.85rem;
 }
 
@@ -133,28 +151,30 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.7rem;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: rgba(255, 90, 95, 0.10);
+  color: var(--primary);
   font-size: 0.8rem;
   margin-bottom: 1rem;
+  border: 1px solid var(--border);
 }
 
 .hero-title {
   font-size: clamp(2rem, 3vw, 2.6rem);
-  font-weight: 700;
-  color: #111827;
+  font-weight: 800;
+  color: var(--textPrimary);
   margin-bottom: 0.75rem;
 }
 
 .hero-subtitle {
   font-size: 1rem;
-  color: #4b5563;
-  max-width: 30rem;
+  color: var(--textSecondary);
+  max-width: 34rem;
   margin: 0.5rem auto 2rem;
 }
 
+/* Buttons */
 .hero-actions {
   display: flex;
   justify-content: center;
@@ -171,28 +191,30 @@ main {
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
   text-decoration: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #f97316, #ea580c);
+  background: var(--primary);
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.06);
 }
 
 .btn-secondary {
-  background: #ffffff;
-  border-color: #e5e7eb;
-  color: #111827;
+  background: var(--surfaceAlt);
+  border-color: var(--border);
+  color: var(--textPrimary);
 }
 
 .btn-secondary:hover {
-  background: #f3f4f6;
+  filter: brightness(1.06);
 }
 
 /* Feature grid */
@@ -204,44 +226,47 @@ main {
 }
 
 .feature {
-  background: #ffffff;
+  background: var(--surface);
   border-radius: 1rem;
   padding: 1.25rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
 }
 
 .feature-icon {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.75rem;
-  background: #fef3c7;
+  background: rgba(0, 168, 150, 0.16);
   font-size: 1.1rem;
 }
 
 .feature-title {
-  font-weight: 600;
+  font-weight: 800;
   margin-bottom: 0.2rem;
+  color: var(--textPrimary);
 }
 
 .feature-text {
   font-size: 0.95rem;
-  color: #4b5563;
+  color: var(--textSecondary);
 }
 
-/* Content pages (privacy/terms/support) */
+/* Content pages (privacy/terms/support/faq) */
 .page-title {
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 0.75rem;
+  color: var(--textPrimary);
 }
 
 .page-subtitle {
   font-size: 0.95rem;
-  color: #6b7280;
+  color: var(--textSecondary);
   margin-bottom: 1.5rem;
 }
 
@@ -251,26 +276,32 @@ main {
 
 .page-section h2 {
   font-size: 1.15rem;
-  font-weight: 600;
+  font-weight: 800;
   margin-bottom: 0.5rem;
+  color: var(--textPrimary);
 }
 
 .page-section p {
   margin-bottom: 0.5rem;
+  color: var(--textSecondary);
 }
 
 .page-section ul {
   list-style: disc;
   padding-left: 1.25rem;
   margin: 0.25rem 0 0.75rem;
-  color: #374151;
+  color: var(--textSecondary);
 }
 
 /* Small helpers */
 .muted {
-  color: #6b7280;
+  color: var(--textMuted);
   font-size: 0.85rem;
 }
+
+/* Links */
+a { color: var(--primary); }
+a:hover { filter: brightness(1.1); }
 
 /* Mobile navigation (burger menu) */
 @media (max-width: 640px) {
@@ -283,19 +314,21 @@ main {
     top: 100%;
     right: 0;
     left: 0;
-    background: #ffffff;
+    background: var(--surface);
     flex-direction: column;
     align-items: flex-start;
     padding: 0.75rem 1.5rem 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    display: none; /* hidden by default on mobile */
+    border-bottom: 1px solid var(--border);
+    display: none;
+    z-index: 50;
   }
 
   .nav a {
-    padding: 0.25rem 0;
+    padding: 0.35rem 0;
+    width: 100%;
   }
 
   .nav.nav-open {
-    display: flex; /* shown when JS toggles .nav-open */
+    display: flex;
   }
 }

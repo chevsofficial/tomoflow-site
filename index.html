@@ -14,7 +14,7 @@
 <body>
   <div class="page">
     <div id="siteHeader"></div>
-    <!-- Main -->
+
     <main>
       <section class="container hero">
         <div class="hero-badge">
@@ -30,10 +30,9 @@
         </p>
 
         <div class="hero-actions">
-          <!-- Replace # with real store links when ready -->
-          <a href="#" class="btn btn-primary">Download on the App Store</a>
-          <a href="#" class="btn btn-secondary">Get it on Google Play</a>
-          <a href="app.html" class="btn btn-secondary">Open Web App (beta)</a>
+          <a id="btnAppStore" href="#" class="btn btn-primary">Download on the App Store</a>
+          <a id="btnPlayStore" href="#" class="btn btn-secondary">Get it on Google Play</a>
+          <a id="btnWebApp" href="#" class="btn btn-secondary">Open Web App (beta)</a>
         </div>
 
         <section class="features">
@@ -44,35 +43,43 @@
               Organize your tasks into To-Do and Done, start a focus session with a single tap, and keep everything in one place.
             </p>
           </article>
+
           <article class="feature">
             <div class="feature-icon">📊</div>
             <h2 class="feature-title">Real focus analytics</h2>
             <p class="feature-text">
-              TomoFlow tracks your actual focus time (not just planned time)
-              so you can see how much deep work you’re truly getting done.
+              Understand your focus patterns with clean analytics so you can improve your consistency over time.
             </p>
           </article>
+
           <article class="feature">
             <div class="feature-icon">🧠</div>
             <h2 class="feature-title">Stay in the flow</h2>
             <p class="feature-text">
-              Gentle reminders, clear sessions, and a friendly design help you
-              keep momentum without overwhelming you with options.
+              Gentle reminders, clear sessions, and a friendly design help you keep momentum without overwhelming you with options.
             </p>
           </article>
+
           <article class="feature">
             <div class="feature-icon">🔒</div>
             <h2 class="feature-title">Privacy-respectful</h2>
             <p class="feature-text">
-              No account required. Optional cloud sync is available for those
-              who want it. You stay in control of your data.
+              No account required. Optional cloud features are available for those who want them. You stay in control of your data.
+            </p>
+          </article>
+
+          <!-- ✅ New Pro card -->
+          <article class="feature">
+            <div class="feature-icon">☁️</div>
+            <h2 class="feature-title">Pro: Cloud Sync + Premium Themes</h2>
+            <p class="feature-text">
+              Upgrade to TomoFlow Pro to sync your tasks and history across devices and unlock premium themes to customize your workflow.
             </p>
           </article>
         </section>
       </section>
     </main>
 
-    <!-- Footer -->
     <footer class="site-footer">
       <div class="container">
         <p>© <span id="year"></span> TomoFlow. All rights reserved.</p>
@@ -83,7 +90,34 @@
     </footer>
   </div>
 
+  <!-- Shared header/nav (injects header + mobile toggle) -->
+  <script src="/assets/js/nav.js"></script>
+
+  <!-- Shared site utilities (year etc) -->
   <script src="/assets/js/main.js"></script>
-  <script src="/assets/js/nav.js" defer></script>
+
+  <!-- Centralized links -->
+  <script src="/assets/js/links.js"></script>
+  <script>
+    (function () {
+      const L = window.TOMOFLOW_LINKS || {};
+
+      const a1 = document.getElementById("btnAppStore");
+      const a2 = document.getElementById("btnPlayStore");
+      const a3 = document.getElementById("btnWebApp");
+
+      if (a1 && L.appStore) a1.href = L.appStore;
+      if (a2 && L.playStore) a2.href = L.playStore;
+      if (a3 && L.webApp) a3.href = L.webApp;
+
+      // Open store links in new tab (desktop-friendly)
+      [a1, a2].forEach(a => {
+        if (a && a.href && a.href !== "#") {
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

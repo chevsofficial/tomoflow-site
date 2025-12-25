@@ -3,7 +3,6 @@
   const headerMount = document.getElementById("siteHeader");
   if (!headerMount) return;
 
-  // ✅ Single source of truth for nav links
   const links = [
     { href: "/", label: "Home" },
     { href: "/app", label: "Web App" },
@@ -13,7 +12,6 @@
     { href: "/terms", label: "Terms" },
   ];
 
-  // ✅ Match your existing live pages: logo path is /assets/img/logo.svg
   const headerHtml = `
     <header class="site-header">
       <div class="container site-header-inner">
@@ -22,7 +20,8 @@
           <span class="brand-text">TomoFlow</span>
         </a>
 
-        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="siteNav">
+          <span class="nav-toggle-bar"></span>
           <span class="nav-toggle-bar"></span>
           <span class="nav-toggle-bar"></span>
         </button>
@@ -36,21 +35,23 @@
 
   headerMount.innerHTML = headerHtml;
 
-  // Mobile burger toggle
   const navToggle = document.getElementById("navToggle");
   const nav = document.getElementById("siteNav");
+
   if (navToggle && nav) {
-    navToggle.addEventListener("click", () => nav.classList.toggle("nav-open"));
+    navToggle.addEventListener("click", () => {
+      const isOpen = nav.classList.toggle("nav-open");
+      navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
   }
 
-  // Optional: mark active link (nice UX)
+  // Active link styling (uses dark theme)
   const path = window.location.pathname.replace(/\/$/, "") || "/";
-  const anchors = nav ? nav.querySelectorAll("a") : [];
-  anchors.forEach((a) => {
+  nav?.querySelectorAll("a").forEach((a) => {
     const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
     if (href === path) {
-      a.style.color = "#111827";
-      a.style.fontWeight = "600";
+      a.style.color = "var(--textPrimary)";
+      a.style.fontWeight = "800";
     }
   });
 })();
