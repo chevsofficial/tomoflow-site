@@ -68,12 +68,20 @@
             </p>
           </article>
 
-          <!-- ✅ New Pro card -->
+          <!-- ✅ Split into two separate cards -->
           <article class="feature">
             <div class="feature-icon">☁️</div>
-            <h2 class="feature-title">Pro: Cloud Sync + Premium Themes</h2>
+            <h2 class="feature-title">Pro: Cloud Sync</h2>
             <p class="feature-text">
-              Upgrade to TomoFlow Pro to sync your tasks and history across devices and unlock premium themes to customize your workflow.
+              Sync your tasks, activity types, and focus history across devices with TomoFlow Pro.
+            </p>
+          </article>
+
+          <article class="feature">
+            <div class="feature-icon">🎨</div>
+            <h2 class="feature-title">Pro: Premium Themes</h2>
+            <p class="feature-text">
+              Personalize your workspace with premium themes designed for different focus moods and workflows.
             </p>
           </article>
         </section>
@@ -90,13 +98,9 @@
     </footer>
   </div>
 
-  <!-- Shared header/nav (injects header + mobile toggle) -->
   <script src="/assets/js/nav.js"></script>
-
-  <!-- Shared site utilities (year etc) -->
   <script src="/assets/js/main.js"></script>
 
-  <!-- Centralized links -->
   <script src="/assets/js/links.js"></script>
   <script>
     (function () {
@@ -110,7 +114,6 @@
       if (a2 && L.playStore) a2.href = L.playStore;
       if (a3 && L.webApp) a3.href = L.webApp;
 
-      // Open store links in new tab (desktop-friendly)
       [a1, a2].forEach(a => {
         if (a && a.href && a.href !== "#") {
           a.target = "_blank";

@@ -18,7 +18,7 @@
   --shadow: rgba(0, 0, 0, 0.65);
 }
 
-/* Basic reset */
+/* Reset */
 *,
 *::before,
 *::after {
@@ -60,35 +60,45 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1rem;
   position: relative;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   text-decoration: none;
-}
-
-/* ✅ Fix iPhone “foggy” logo: avoid round mask + reduce blur */
-.brand-logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;       /* was 999px */
-  object-fit: contain;      /* better for svg */
-  display: block;
-  background: transparent;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
 }
 
 .brand-text {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--textPrimary);
 }
 
+/* ✅ Fix SVG "white box" look + iPhone blur:
+   - remove rounded mask
+   - ensure transparent background
+   - remove any "cover" cropping */
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: block;
+  object-fit: contain;
+  background: transparent;
+  box-shadow: none;
+
+  /* helps Safari/iOS rendering */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* ✅ If the SVG file itself contains a white rect background,
+   CSS can't remove it. But this fixes most "white box" caused by CSS. */
+
+/* Nav links */
 .nav {
   display: flex;
   gap: 1rem;
@@ -105,26 +115,26 @@ body {
   color: var(--textPrimary);
 }
 
-/* Hamburger button (hidden on desktop by default) */
+/* ✅ NEW: Icon-based hamburger button */
 .nav-toggle {
-  display: none;
-  border: none;
-  background: transparent;
-  padding: 0.25rem;
+  display: none; /* shown on mobile via media query */
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--textPrimary);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   cursor: pointer;
   align-items: center;
   justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ✅ Ensure 3 visible lines */
-.nav-toggle-bar {
-  display: block;
-  width: 22px;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--textPrimary);
-  margin: 4px 0;
+.nav-toggle:hover {
+  filter: brightness(1.06);
 }
 
 /* Main */
@@ -141,7 +151,7 @@ main {
   font-size: 0.85rem;
 }
 
-/* Landing page hero */
+/* Hero */
 .hero {
   text-align: center;
   padding: 3rem 1rem 2rem;
@@ -162,7 +172,7 @@ main {
 
 .hero-title {
   font-size: clamp(2rem, 3vw, 2.6rem);
-  font-weight: 800;
+  font-weight: 900;
   color: var(--textPrimary);
   margin-bottom: 0.75rem;
 }
@@ -191,7 +201,7 @@ main {
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   text-decoration: none;
   user-select: none;
@@ -203,9 +213,7 @@ main {
   color: #ffffff;
 }
 
-.btn-primary:hover {
-  filter: brightness(1.06);
-}
+.btn-primary:hover { filter: brightness(1.06); }
 
 .btn-secondary {
   background: var(--surfaceAlt);
@@ -213,9 +221,7 @@ main {
   color: var(--textPrimary);
 }
 
-.btn-secondary:hover {
-  filter: brightness(1.06);
-}
+.btn-secondary:hover { filter: brightness(1.06); }
 
 /* Feature grid */
 .features {
@@ -246,7 +252,7 @@ main {
 }
 
 .feature-title {
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 0.2rem;
   color: var(--textPrimary);
 }
@@ -256,10 +262,10 @@ main {
   color: var(--textSecondary);
 }
 
-/* Content pages (privacy/terms/support/faq) */
+/* Content pages */
 .page-title {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 0.75rem;
   color: var(--textPrimary);
 }
@@ -276,7 +282,7 @@ main {
 
 .page-section h2 {
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 0.5rem;
   color: var(--textPrimary);
 }
@@ -293,17 +299,16 @@ main {
   color: var(--textSecondary);
 }
 
-/* Small helpers */
+/* Helpers */
 .muted {
   color: var(--textMuted);
   font-size: 0.85rem;
 }
 
-/* Links */
 a { color: var(--primary); }
 a:hover { filter: brightness(1.1); }
 
-/* Mobile navigation (burger menu) */
+/* ✅ Mobile nav behavior */
 @media (max-width: 640px) {
   .nav-toggle {
     display: inline-flex;
@@ -317,14 +322,14 @@ a:hover { filter: brightness(1.1); }
     background: var(--surface);
     flex-direction: column;
     align-items: flex-start;
-    padding: 0.75rem 1.5rem 1rem;
+    padding: 0.85rem 1.5rem 1.0rem;
     border-bottom: 1px solid var(--border);
     display: none;
-    z-index: 50;
+    z-index: 999;
   }
 
   .nav a {
-    padding: 0.35rem 0;
+    padding: 0.45rem 0;
     width: 100%;
   }
 
