@@ -115,6 +115,17 @@ body {
   color: var(--textPrimary);
 }
 
+/* ✅ Drawer setup: on mobile hide desktop nav, show hamburger */
+@media (max-width: 640px) {
+  .nav-desktop {
+    display: none !important;
+  }
+
+  .nav-toggle {
+    display: inline-flex !important;
+  }
+}
+
 /* ✅ NEW: Icon-based hamburger button */
 .nav-toggle {
   display: none; /* shown on mobile via media query */
@@ -307,36 +318,6 @@ main {
 
 a { color: var(--primary); }
 a:hover { filter: brightness(1.1); }
-
-/* ✅ Mobile nav behavior */
-@media (max-width: 640px) {
-  .nav-toggle {
-    display: inline-flex;
-  }
-
-  .nav {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    left: 0;
-    background: var(--surface);
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 0.85rem 1.5rem 1.0rem;
-    border-bottom: 1px solid var(--border);
-    display: none;
-    z-index: 999;
-  }
-
-  .nav a {
-    padding: 0.45rem 0;
-    width: 100%;
-  }
-
-  .nav.nav-open {
-    display: flex;
-  }
-}
 
 /* === Side Drawer Navigation (mobile + optional desktop) === */
 

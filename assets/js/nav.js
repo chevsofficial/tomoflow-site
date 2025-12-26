@@ -13,6 +13,8 @@
     { href: "/terms", label: "Terms" },
   ];
 
+  const linksHtml = links.map(l => `<a href="${l.href}">${l.label}</a>`).join("");
+
   headerMount.innerHTML = `
     <header class="site-header">
       <div class="container site-header-inner">
@@ -21,31 +23,34 @@
           <span class="brand-text">TomoFlow</span>
         </a>
 
-        <!-- Hamburger (button) -->
+        <!-- ✅ Desktop nav -->
+        <nav class="nav nav-desktop" aria-label="Primary">
+          ${linksHtml}
+        </nav>
+
+        <!-- ✅ Mobile hamburger -->
         <button
           class="nav-toggle"
           id="navToggle"
           type="button"
           aria-label="Open menu"
           aria-expanded="false"
-          aria-controls="drawerNav"
-        >
-          ☰
-        </button>
+          aria-controls="drawer"
+        >☰</button>
       </div>
 
       <!-- Backdrop -->
       <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
 
-      <!-- Side drawer -->
+      <!-- Side drawer (mobile) -->
       <aside class="drawer" id="drawer" aria-hidden="true">
         <div class="drawer-header">
           <span class="drawer-title">Menu</span>
           <button class="drawer-close" id="drawerClose" type="button" aria-label="Close menu">✕</button>
         </div>
 
-        <nav class="drawer-nav" id="drawerNav" aria-label="Site navigation">
-          ${links.map(l => `<a href="${l.href}">${l.label}</a>`).join("")}
+        <nav class="drawer-nav" id="drawerNav" aria-label="Mobile">
+          ${linksHtml}
         </nav>
       </aside>
     </header>
@@ -64,15 +69,12 @@
     drawer.setAttribute("aria-hidden", open ? "false" : "true");
     navToggle.setAttribute("aria-expanded", open ? "true" : "false");
 
-    // Backdrop
     backdrop.hidden = !open;
 
-    // Prevent background scroll when drawer is open
     document.documentElement.classList.toggle("drawer-lock", open);
     document.body.classList.toggle("drawer-lock", open);
 
     if (open) {
-      // focus the first link for accessibility
       const firstLink = drawerNav.querySelector("a");
       if (firstLink) firstLink.focus({ preventScroll: true });
     } else {
@@ -97,18 +99,24 @@
     }
   });
 
-  // Close on link click
+  // Close drawer on link click
   drawerNav.querySelectorAll("a").forEach((a) => {
     a.addEventListener("click", () => setOpen(false));
   });
 
-  // Active link styling
+  // Active link styling (desktop + drawer)
   const path = window.location.pathname.replace(/\/$/, "") || "/";
-  drawerNav.querySelectorAll("a").forEach((a) => {
-    const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
-    if (href === path) {
-      a.style.color = "var(--textPrimary)";
-      a.style.fontWeight = "900";
-    }
-  });
+  const markActive = (root) => {
+    root.querySelectorAll("a").forEach((a) => {
+      const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
+      if (href === path) {
+        a.style.color = "var(--textPrimary)";
+        a.style.fontWeight = "900";
+      }
+    });
+  };
+
+  const desktopNav = headerMount.querySelector(".nav-desktop");
+  if (desktopNav) markActive(desktopNav);
+  markActive(drawerNav);
 })();
