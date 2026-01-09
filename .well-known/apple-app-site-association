@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID_PLACEHOLDER.com.chevslabs.tomoflow",
+        "paths": [
+          "/auth-callback",
+          "/auth-recovery",
+          "/auth-callback/*",
+          "/auth-recovery/*"
+        ]
+      }
+    ]
+  }
+}
