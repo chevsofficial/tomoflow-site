@@ -162,6 +162,20 @@ main {
   font-size: 0.85rem;
 }
 
+.footer-links {
+  margin-top: 0.4rem;
+}
+
+.footer-links a {
+  color: var(--textSecondary);
+  text-decoration: none;
+  margin: 0 0.25rem;
+}
+
+.footer-links a:hover {
+  color: var(--textPrimary);
+}
+
 /* Hero */
 .hero {
   text-align: center;
@@ -217,6 +231,23 @@ main {
   text-decoration: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.84rem;
+}
+
+.auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .auth-actions {
+    display: none;
+  }
 }
 
 .btn-primary {

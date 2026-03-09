@@ -8,7 +8,10 @@
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/app", "destination": "/app/index.html" },
-    { "source": "/app/:path*", "destination": "/app/:path*" }
+    { "source": "/app/:path*", "destination": "/app/:path*" },
+    { "source": "/_expo/:path*", "destination": "/app/_expo/:path*" },
+    { "source": "/assets/node_modules/:path*", "destination": "/app/assets/node_modules/:path*" },
+    { "source": "/assets/assets/:path*", "destination": "/app/assets/assets/:path*" }
   ],
   "headers": [
     {
