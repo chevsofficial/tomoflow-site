@@ -8,7 +8,9 @@ Static marketing + legal pages for the TomoFlow focus timer app.
 - `privacy.html` — Privacy Policy
 - `terms.html` — Terms of Use
 - `support.html` — Support / Contact
-- `app.html` — (Optional) Web app placeholder
+- `app/` — Exported Expo web app bundle served at `/app`
+- `api/stripe/checkout.js` — Stripe Checkout session endpoint
+- `api/stripe/webhook.js` — Webhook placeholder for entitlement sync
 - `404.html` — Not found page
 - `assets/css/styles.css` — Shared styles
 - `assets/js/main.js` — Small JS helper (year)
