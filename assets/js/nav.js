@@ -19,8 +19,8 @@
 
   const authButtons = `
     <div class="auth-actions" id="authActions">
-      <a class="btn btn-secondary btn-sm" data-auth="login" href="/app/auth">Login</a>
-      <a class="btn btn-primary btn-sm" data-auth="signup" href="/app/auth?mode=signup">Sign up</a>
+      <a class="btn btn-secondary btn-sm" data-auth="login" href="/app/#/auth">Login</a>
+      <a class="btn btn-primary btn-sm" data-auth="signup" href="/app/#/auth?mode=signup">Sign up</a>
       <button class="btn btn-secondary btn-sm" data-auth="logout" id="logoutBtn" style="display:none;">Logout</button>
     </div>
   `;
@@ -59,8 +59,8 @@
 
         <nav class="drawer-nav" id="drawerNav" aria-label="Mobile">
           ${linkHtml(primaryLinks)}
-          <a href="/app/auth" data-auth="login">Login</a>
-          <a href="/app/auth?mode=signup" data-auth="signup">Sign up</a>
+          <a href="/app/#/auth" data-auth="login">Login</a>
+          <a href="/app/#/auth?mode=signup" data-auth="signup">Sign up</a>
           <a href="#" id="drawerLogout" data-auth="logout" style="display:none;">Logout</a>
         </nav>
       </aside>
