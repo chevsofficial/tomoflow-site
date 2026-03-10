@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   try {
     const params = new URLSearchParams();
     params.append('mode', 'subscription');
-    params.append('success_url', successUrl || 'https://www.tomoflow.app/app?checkout=success');
+    params.append('success_url', successUrl || 'https://www.tomoflow.app/paywall?checkout=success');
     params.append('cancel_url', cancelUrl || 'https://www.tomoflow.app/paywall?checkout=cancel');
     params.append('line_items[0][price]', priceId || process.env.EXPO_PUBLIC_STRIPE_PRICE_ID || 'price_placeholder');
     params.append('line_items[0][quantity]', '1');
