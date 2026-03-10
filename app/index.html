@@ -12,14 +12,14 @@
       body {
         height: 100%;
       }
-      /* Allow page scrolling so mobile/desktop users can reach bottom controls */
+      /* These styles disable body scrolling if you are using <ScrollView> */
       body {
-        overflow: auto;
+        overflow: hidden;
       }
-      /* Keep root full-height while allowing page scroll */
+      /* These styles make the root element full-height */
       #root {
         display: flex;
-        min-height: 100%;
+        height: 100%;
         flex: 1;
       }
     </style>
@@ -32,6 +32,6 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/_expo/static/js/web/AppEntry-3faed125f2e21b76e6e23309164d4324.js" defer></script>
+  <script src="/_expo/static/js/web/AppEntry-ba44a337397968d3f13fc14750d5ee04.js" defer></script>
 </body>
 </html>
