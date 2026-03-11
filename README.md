@@ -10,7 +10,7 @@ Static marketing + legal pages for the TomoFlow focus timer app.
 - `support.html` — Support / Contact
 - `app/` — Exported Expo web app bundle served at `/app`
 - `api/stripe/checkout.js` — Stripe Checkout session endpoint
-- `api/stripe/webhook.js` — Webhook placeholder for entitlement sync
+- `api/stripe/webhook.js` — Stripe webhook handler with signature verification + Supabase entitlement sync
 - `404.html` — Not found page
 - `assets/css/styles.css` — Shared styles
 - `assets/js/main.js` — Small JS helper (year)
