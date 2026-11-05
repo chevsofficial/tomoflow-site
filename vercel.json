@@ -1,39 +1,15 @@
 {
   "rewrites": [
-    { "source": "/auth-callback", "destination": "/auth-callback.html" },
-    { "source": "/auth-recovery", "destination": "/auth-recovery.html" },
-    { "source": "/faq", "destination": "/faq.html" },
-    { "source": "/index", "destination": "/index.html" },
-    { "source": "/support", "destination": "/support.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
-    { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/app", "destination": "/app/index.html" },
-    { "source": "/tasks", "destination": "/app/index.html" },
-    { "source": "/pomodoro", "destination": "/app/index.html" },
-    { "source": "/analytics", "destination": "/app/index.html" },
-    { "source": "/settings", "destination": "/app/index.html" },
-    { "source": "/info", "destination": "/app/index.html" },
-    { "source": "/paywall", "destination": "/app/index.html" },
-    { "source": "/auth", "destination": "/app/index.html" },
-    { "source": "/forgot-password", "destination": "/app/index.html" },
-    { "source": "/_expo/:path*", "destination": "/app/_expo/:path*" },
-    { "source": "/assets/node_modules/:path*", "destination": "/app/assets/node_modules/:path*" },
-    { "source": "/assets/assets/:path*", "destination": "/app/assets/assets/:path*" },
-    { "source": "/app/:path*", "destination": "/app/index.html" }
+    { "source": "/support", "destination": "/support.html" },
+    { "source": "/terms", "destination": "/terms.html" }
   ],
   "headers": [
     {
-      "source": "/.well-known/apple-app-site-association",
+      "source": "/(.*)",
       "headers": [
-        { "key": "Content-Type", "value": "application/json" },
-        { "key": "Cache-Control", "value": "no-store, max-age=0" }
-      ]
-    },
-    {
-      "source": "/.well-known/assetlinks.json",
-      "headers": [
-        { "key": "Content-Type", "value": "application/json" },
-        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
   ]

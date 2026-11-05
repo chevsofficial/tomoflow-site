@@ -10,208 +10,75 @@
 <body>
   <div class="page">
     <div id="siteHeader"></div>
-
-    <!-- Main -->
     <main>
       <section class="container">
         <h1 class="page-title">TomoFlow — Privacy Policy</h1>
-        <p class="page-subtitle">
-          Last updated: December 3, 2025
-        </p>
+        <p class="page-subtitle">Last updated: November 5, 2026</p>
 
         <div class="page-section">
           <p>
-            TomoFlow (“the App”, “we”, “our”, “us”) is a productivity and focus timer
-            application developed by Kevin Eduardo Damken Guerrero. We are committed to
-            protecting your privacy and being transparent about how we collect, use, and
-            store data.
-          </p>
-          <p>This Privacy Policy explains:</p>
-          <ul>
-            <li>What data we collect</li>
-            <li>How we use it</li>
-            <li>How your data is stored</li>
-            <li>Your rights (including delete requests)</li>
-            <li>How to contact us</li>
-          </ul>
-          <p>
-            If you do not agree with this policy, please do not use the App.
+            TomoFlow (“we”, “our”, “us”) is a simple browser Pomodoro timer provided by
+            Kevin Eduardo Damken Guerrero. The web app is local-first: timer settings and
+            theme preference are stored in your browser. No account is required.
           </p>
         </div>
 
         <div class="page-section">
-          <h2>1. Information We Collect</h2>
-          <p>We collect the following types of information:</p>
-
-          <h3>A. Information You Provide</h3>
-
-          <p><strong>Optional Account Data (Cloud Sync)</strong></p>
-          <p>If you choose to create an account, we collect:</p>
+          <h2>1. Data stored on your device</h2>
+          <p>We store in your browser’s localStorage (or similar):</p>
           <ul>
-            <li>Email address</li>
-            <li>
-              Password (stored securely and encrypted by Supabase; we never see
-              or store your plaintext password)
-            </li>
+            <li>Timer settings (work / break lengths, rounds)</li>
+            <li>Selected theme</li>
+            <li>Whether Pro is unlocked on this browser</li>
           </ul>
-          <p>Creating an account is optional. The app works without it.</p>
+          <p>This data does not leave your device unless you clear site data yourself or a payment provider processes a purchase.</p>
+        </div>
 
-          <p><strong>Task &amp; Productivity Data</strong></p>
-          <p>When using the app, we collect:</p>
-          <ul>
-            <li>Task names and categories</li>
-            <li>Pomodoro session logs (start/stop times)</li>
-            <li>Planned time vs. actual time</li>
-            <li>Analytics and performance insights</li>
-            <li>Timer preferences and app settings</li>
-          </ul>
+        <div class="page-section">
+          <h2>2. Payments (optional Pro)</h2>
           <p>
-            This data is used to power your analytics, graphs, task history, and
-            productivity insights.
-          </p>
-
-          <h3>B. Automatically Collected Data</h3>
-
-          <p><strong>Device &amp; App Usage</strong></p>
-          <p>We may collect:</p>
-          <ul>
-            <li>Device model</li>
-            <li>Operating system version</li>
-            <li>App version</li>
-            <li>Interaction with app features</li>
-            <li>Crash logs (if provided by platform analytics)</li>
-          </ul>
-
-          <p><strong>Subscription Information</strong></p>
-          <p>When you purchase TomoFlow Pro, RevenueCat provides us with:</p>
-          <ul>
-            <li>Subscription status</li>
-            <li>Product purchased (monthly or annual)</li>
-            <li>Renewal dates</li>
-            <li>Trial status</li>
-            <li>Platform (Apple / Google)</li>
-          </ul>
-          <p>
-            We do not receive, store, or have access to your credit card or payment details.
+            One-time Pro unlocks are processed by Stripe when you choose to purchase.
+            We do not receive or store your full card details. Stripe’s privacy policy
+            applies to payment processing. After a successful checkout, the success URL
+            may set a local Pro flag in your browser (for example <code>?pro=1</code>).
           </p>
         </div>
 
         <div class="page-section">
-          <h2>2. How We Use Your Data</h2>
-          <p>We use collected data to:</p>
+          <h2>3. Bitcoin tips (optional)</h2>
+          <p>
+            Optional on-chain Bitcoin tips are sent on the Bitcoin network to an address
+            we publish. Tips do not create an account and do not unlock Pro. Blockchain
+            transactions are public by nature.
+          </p>
+        </div>
+
+        <div class="page-section">
+          <h2>4. Hosting &amp; logs</h2>
+          <p>
+            The static site may be hosted by a provider such as Vercel. Standard web
+            server / CDN logs (IP address, user agent, URLs) may be collected by that host
+            for security and reliability. We do not run app analytics SDKs in the simplified web timer.
+          </p>
+        </div>
+
+        <div class="page-section">
+          <h2>5. What we do not collect</h2>
           <ul>
-            <li>Save and sync your tasks across devices (if an account is created)</li>
-            <li>Display your productivity analytics</li>
-            <li>Improve app performance and reliability</li>
-            <li>Personalize user experience</li>
-            <li>Process subscription status (via RevenueCat)</li>
-            <li>Send notifications for timers, reminders, and breaks</li>
+            <li>No required email or password for the web timer</li>
+            <li>No cloud sync of tasks or focus history in this web version</li>
+            <li>No subscription account database for the simplified web app</li>
           </ul>
-          <p>
-            We do <strong>not</strong> sell your personal information and do
-            <strong>not</strong> display third-party advertising.
-          </p>
         </div>
 
         <div class="page-section">
-          <h2>3. Third-Party Services</h2>
-          <p>We use the following service providers:</p>
-          <ul>
-            <li>
-              <strong>Supabase</strong><br />
-              Used for account creation, secure authentication, and optional cloud sync.
-            </li>
-            <li>
-              <strong>RevenueCat</strong><br />
-              Used to process subscriptions and verify purchase status.
-            </li>
-            <li>
-              <strong>Expo / Expo Push Notifications</strong><br />
-              Used to send local and push notifications related to timers and reminders.
-            </li>
-          </ul>
-          <p>
-            None of these services give us access to your password or payment details.
-          </p>
-        </div>
-
-        <div class="page-section">
-          <h2>4. Data Storage &amp; Security</h2>
-          <p>Your data is stored securely on Supabase servers. Supabase encrypts:</p>
-          <ul>
-            <li>Passwords</li>
-            <li>Sensitive authentication data</li>
-          </ul>
-          <p>
-            We apply industry-standard security measures, but no method of data transmission
-            or storage is 100% secure.
-          </p>
-        </div>
-
-        <div class="page-section">
-          <h2>5. Your Rights</h2>
-          <p>You have the right to:</p>
-          <ul>
-            <li>Access your data</li>
-            <li>Request correction</li>
-            <li>Request deletion</li>
-            <li>Withdraw consent</li>
-            <li>Request account deletion</li>
-            <li>Request cloud data deletion</li>
-          </ul>
-
-          <p><strong>How to request deletion</strong></p>
-          <p>
-            Until an in-app delete option is launched, you may email:
-          </p>
-          <p>
-            📧 <a href="mailto:support@tomoflow.app">support@tomoflow.app</a><br />
-            Subject: <strong>Delete My Data</strong>
-          </p>
-          <p>We will process your request within 30 days.</p>
-        </div>
-
-        <div class="page-section">
-          <h2>6. Children’s Privacy</h2>
-          <p>
-            TomoFlow is not directed to children under 13 years old. We do not
-            knowingly collect data from children under 13.
-          </p>
-        </div>
-
-        <div class="page-section">
-          <h2>7. International Data Transfers</h2>
-          <p>
-            Your data may be processed in countries outside your residence. By
-            using the App, you consent to this transfer.
-          </p>
-        </div>
-
-        <div class="page-section">
-          <h2>8. Changes to This Policy</h2>
-          <p>
-            We may update this Privacy Policy. The “Last updated” date will reflect changes.
-          </p>
-        </div>
-
-        <div class="page-section">
-          <h2>9. Contact Us</h2>
-          <p>If you have questions, contact us at:</p>
-          <p>
-            📧 <a href="mailto:support@tomoflow.app">support@tomoflow.app</a>
-          </p>
+          <h2>6. Contact</h2>
+          <p>Questions: <a href="mailto:support@tomoflow.app">support@tomoflow.app</a></p>
         </div>
       </section>
     </main>
-
-    <!-- Footer -->
-    <footer class="site-footer">
-      <div class="container">
-        <p>© <span id="year"></span> TomoFlow. All rights reserved.</p>
-      </div>
-    </footer>
+    <footer class="site-footer"><div class="container"><p>© <span id="year"></span> TomoFlow. All rights reserved.</p></div></footer>
   </div>
-
   <script src="/assets/js/nav.js" defer></script>
   <script src="/assets/js/main.js" defer></script>
 </body>

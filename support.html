@@ -9,69 +9,38 @@
 </head>
 <body>
   <div class="page">
-  <div id="siteHeader"></div>
+    <div id="siteHeader"></div>
     <main>
       <section class="container">
         <h1 class="page-title">Support</h1>
-        <p class="page-subtitle">
-          Need help with TomoFlow? We’re here for you.
-        </p>
+        <p class="page-subtitle">Need help with TomoFlow?</p>
 
         <div class="page-section">
-          <h2>Contact us</h2>
-          <p>
-            The fastest way to reach us is by email:
-            <a href="mailto:support@tomoflow.app">support@tomoflow.app</a>
-          </p>
-          <p>When you contact us, it helps if you include:</p>
-          <ul>
-            <li>Your platform (iOS, Android, or Web)</li>
-            <li>Your app version (from settings, if possible)</li>
-            <li>A short description of the issue</li>
-            <li>Screenshots or screen recordings, if relevant</li>
-          </ul>
+          <h2>Contact</h2>
+          <p>Email <a href="mailto:support@tomoflow.app">support@tomoflow.app</a>.</p>
         </div>
 
         <div class="page-section">
           <h2>Common questions</h2>
-          <p><strong>Do I need an account to use TomoFlow?</strong></p>
-          <p>
-            No. You can use TomoFlow entirely offline and without an account.
-            Accounts are only needed if you want optional cloud sync across devices.
-          </p>
+          <p><strong>Do I need an account?</strong></p>
+          <p>No. The web timer works entirely in your browser.</p>
 
-          <p><strong>How do I delete my data or account?</strong></p>
-          <p>
-            If you have created an account and want to delete your data, please contact
-            us at <a href="mailto:support@tomoflow.app">support@tomoflow.app</a>.
-            In future versions, we plan to add a self-service option directly in the app.
-          </p>
+          <p><strong>Where is my data?</strong></p>
+          <p>Settings and Pro unlock live in localStorage on this device/browser.</p>
 
-          <p><strong>Does TomoFlow work without internet?</strong></p>
-          <p>
-            Yes, core timer and tasks work offline. Some features, like cloud sync
-            or future web app features, may require an internet connection.
-          </p>
-        </div>
+          <p><strong>How does Pro work?</strong></p>
+          <p>One-time purchase via Stripe (~$21). After checkout, return to the site with <code>?pro=1</code> so this browser unlocks extra themes.</p>
 
-        <div class="page-section">
-          <h2>Feedback and feature requests</h2>
-          <p>
-            We’re actively improving TomoFlow and love hearing how you use it.
-            If you have ideas or feature requests, email us with the subject
-            line “Feedback” so we can find it easily.
-          </p>
+          <p><strong>Do Bitcoin tips unlock Pro?</strong></p>
+          <p>No. Tips are optional support only.</p>
+
+          <p><strong>I cleared my browser and lost Pro</strong></p>
+          <p>Email support with your Stripe receipt and we can help you re-apply the unlock.</p>
         </div>
       </section>
     </main>
-
-    <footer class="site-footer">
-      <div class="container">
-        <p>© <span id="year"></span> TomoFlow. All rights reserved.</p>
-      </div>
-    </footer>
+    <footer class="site-footer"><div class="container"><p>© <span id="year"></span> TomoFlow. All rights reserved.</p></div></footer>
   </div>
-
   <script src="/assets/js/nav.js" defer></script>
   <script src="/assets/js/main.js" defer></script>
 </body>
