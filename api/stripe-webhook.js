@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { purchaseConfirmationEmail } = require('./email-brand');
+const deliveryStore = require('./delivery-store');
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -42,16 +43,6 @@ async function isPro(session) {
   } while (after);
   return false;
 }
-async function redis(...command) {
-  const response = await fetch(process.env.UPSTASH_REDIS_REST_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(command),
-  });
-  const data = await response.json();
-  if (!response.ok || data.error) throw new Error('Delivery store unavailable');
-  return data.result;
-}
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
   if (!process.env.STRIPE_WEBHOOK_SECRET) return json(res, 503, { error: 'Webhook not configured' });
@@ -74,15 +65,14 @@ module.exports = async function handler(req, res) {
     const to = session.customer_details?.email || session.customer_email;
     if (typeof to !== 'string' || to.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error('Purchase recipient missing');
     if (!Number.isSafeInteger(session.amount_total) || session.amount_total <= 0 || !/^[a-z]{3}$/.test(session.currency || '') || typeof session.livemode !== 'boolean') throw new Error('Invalid purchase details');
-    if (!process.env.RESEND_API_KEY || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) throw new Error('Delivery not configured');
+    if (!process.env.RESEND_API_KEY || !process.env.TOMOFLOW_SUPABASE_URL || !process.env.TOMOFLOW_SUPABASE_SECRET_KEY) throw new Error('Delivery not configured');
     const key = `tomoflow:confirmation:v1:${session.livemode ? 'live' : 'test'}:${session.id}`;
     // Atomic first writer freezes the entire payload, so concurrent events use identical requests.
-    const record = { started: Date.now(), mail: {
+    const mail = {
       from: process.env.RESEND_FROM || 'TomoFlow <noreply@tomoflow.app>', to,
       ...purchaseConfirmationEmail({ session }),
-    } };
-    await redis('SET', key, JSON.stringify(record), 'NX');
-    const saved = JSON.parse(await redis('GET', key));
+    };
+    const saved = await deliveryStore.getOrCreate(key, mail);
     if (saved.sent) return json(res, 200, { duplicate: true });
     // Resend retains idempotency keys for 24 hours. Never risk a second email after expiry.
     if (Date.now() - saved.started > 23 * 60 * 60 * 1000) throw new Error('Delivery requires reconciliation');
@@ -92,7 +82,7 @@ module.exports = async function handler(req, res) {
     });
     const result = await response.json();
     if (!response.ok || !result.id) throw new Error('Email send failed');
-    await redis('SET', key, JSON.stringify({ ...saved, sent: result.id }));
+    await deliveryStore.markSent(key, result.id);
     return json(res, 200, { sent: true });
   } catch (error) {
     console.error('purchase confirmation:', error.message);

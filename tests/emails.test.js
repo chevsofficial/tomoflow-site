@@ -12,18 +12,31 @@ const session = overrides => ({ object: 'checkout.session', id: 'cs_test_purchas
 const event = (overrides, type = 'checkout.session.completed') => ({ id: 'evt_one', type, data: { object: session(overrides) } });
 const response = (body, ok = true) => ({ ok, json: async () => body });
 beforeEach(() => {
-  Object.assign(process.env, { STRIPE_WEBHOOK_SECRET: 'whsec_mock', STRIPE_SECRET_KEY: 'sk_test_mock', STRIPE_PRO_PAYMENT_LINK_ID: 'plink_pro', RESEND_API_KEY: 'mock', UPSTASH_REDIS_REST_URL: 'https://redis.example', UPSTASH_REDIS_REST_TOKEN: 'mock' });
+  Object.assign(process.env, { STRIPE_WEBHOOK_SECRET: 'whsec_mock', STRIPE_SECRET_KEY: 'sk_test_mock', STRIPE_PRO_PAYMENT_LINK_ID: 'plink_pro', RESEND_API_KEY: 'mock', TOMOFLOW_SUPABASE_URL: 'https://database.example', TOMOFLOW_SUPABASE_SECRET_KEY: 'sb_secret_mock' });
   delete process.env.STRIPE_PRO_PRICE_ID;
   delete process.env.STRIPE_PRO_PRODUCT_ID;
   records = new Map(); sends = []; accepted = new Map(); failSend = false; failStore = false; stripeCalls = 0;
   stripePages = [{ data: [], has_more: false }];
   global.fetch = async (url, options) => {
-    if (url === 'https://redis.example') {
-      const [op, key, value, nx] = JSON.parse(options.body);
-      if (op === 'GET') return response({ result: records.get(key) || null });
-      if (failStore && !nx) throw new Error('store failed');
-      if (!nx || !records.has(key)) records.set(key, value);
-      return response({ result: 'OK' });
+    if (url.startsWith('https://database.example/rest/v1/purchase_email_deliveries')) {
+      assert.equal(options.headers.apikey, process.env.TOMOFLOW_SUPABASE_SECRET_KEY);
+      if (process.env.TOMOFLOW_SUPABASE_SECRET_KEY.startsWith('sb_secret_')) assert.equal(options.headers.Authorization, undefined);
+      const parsed = new URL(url);
+      if (options.method === 'POST') {
+        assert.equal(options.headers.Prefer, 'resolution=ignore-duplicates,return=minimal');
+        const row = JSON.parse(options.body);
+        if (!records.has(row.delivery_key)) records.set(row.delivery_key, JSON.stringify({ started: Date.now(), mail: row.mail, sent: null }));
+        return response(null);
+      }
+      const key = parsed.searchParams.get('delivery_key').slice(3);
+      if (options.method === 'PATCH') {
+        if (failStore) throw new Error('store failed');
+        const row = JSON.parse(records.get(key));
+        row.sent = JSON.parse(options.body).sent;
+        records.set(key, JSON.stringify(row));
+        return response([row]);
+      }
+      return response(records.has(key) ? [JSON.parse(records.get(key))] : []);
     }
     if (url.startsWith('https://api.stripe.com')) { stripeCalls++; return response(stripePages.shift()); }
     assert.equal(url, 'https://api.resend.com/emails');
@@ -115,7 +128,7 @@ test('send failure recovers on retry; marker write failure retries identical req
 });
 test('missing recipient and delivery configuration return retryable errors without sending', async () => {
   assert.equal((await call(webhook, event({ customer_details: {} }))).statusCode, 503);
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.TOMOFLOW_SUPABASE_SECRET_KEY;
   assert.equal((await call(webhook, event())).statusCode, 503);
   assert.equal(sends.length, 0);
 });
@@ -179,4 +192,33 @@ test('invalid amounts, absent matchers, malformed sessions and non-POST never se
   delete process.env.STRIPE_PRO_PAYMENT_LINK_ID;
   assert.equal((await call(webhook, event())).statusCode, 503);
   assert.equal(sends.length, 0);
+});
+test('Supabase API rejects HTTP failures and missing records; never sends without durable storage', async () => {
+  for (const failure of ['insert', 'read', 'missing', 'invalid']) {
+    global.fetch = async (_url, options) => {
+      if (options.method === 'POST') return response(null, failure !== 'insert');
+      if (failure === 'read') return response({}, false);
+      return response(failure === 'invalid' ? [{ started: 'not-a-timestamp', mail: {} }] : []);
+    };
+    assert.equal((await call(webhook, event())).statusCode, 503);
+  }
+  assert.equal(sends.length, 0);
+});
+test('Supabase missing update result remains retryable after Resend acceptance', async () => {
+  const normalFetch = global.fetch;
+  global.fetch = async (url, options) => options.method === 'PATCH' ? response([]) : normalFetch(url, options);
+  assert.equal((await call(webhook, event())).statusCode, 503);
+  assert.equal(accepted.size, 1);
+  global.fetch = normalFetch;
+  assert.equal((await call(webhook, event())).statusCode, 200);
+  assert.equal(accepted.size, 1);
+});
+test('legacy service_role credential uses Bearer auth only on Supabase requests', async () => {
+  process.env.TOMOFLOW_SUPABASE_SECRET_KEY = 'eyJ_mock_legacy';
+  const normalFetch = global.fetch;
+  global.fetch = async (url, options) => {
+    if (url.startsWith('https://database.example/')) assert.equal(options.headers.Authorization, 'Bearer eyJ_mock_legacy');
+    return normalFetch(url, options);
+  };
+  assert.equal((await call(webhook, event())).statusCode, 200);
 });
