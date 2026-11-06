@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TomoFlow — Simple Pomodoro Timer</title>
-  <meta name="description" content="TomoFlow is a simple Pomodoro timer in your browser. Free themes, optional one-time Pro unlock, and optional Bitcoin tips. No account required." />
+  <meta name="description" content="TomoFlow is a simple Pomodoro timer in your browser. Free themes, optional one-time Pro unlock for extra themes and characters, and optional Bitcoin tips. No account required." />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-48-transparent.png" />
 </head>
@@ -18,7 +18,7 @@
           <span class="pro-pill" id="proBadge" hidden>Pro</span>
         </div>
 
-        <img id="tomatoImg" class="tomato" src="/assets/img/tomatoes/tomato-happy.png" alt="Focus tomato" width="120" height="120" />
+        <img id="tomatoImg" class="tomato" src="/assets/img/tomatoes/tomato-happy.png" alt="Tomo, focus" width="120" height="120" />
 
         <p class="mode-label" id="modeLabel">Focus</p>
         <div class="timer-display" id="timerDisplay" aria-live="polite">25:00</div>
@@ -56,52 +56,101 @@
       </section>
 
       <section class="container panel" id="themes">
-        <h2 class="panel-title">Themes</h2>
-        <p class="panel-sub">A few free. Unlock Pro for the full library.</p>
+        <h2 class="panel-title">Themes &amp; Characters</h2>
+        <p class="panel-sub">Style your timer and pick a focus buddy. Pro unlocks every theme and character.</p>
 
-        <div class="theme-picker" id="themePicker">
-          <button
-            type="button"
-            class="theme-trigger"
-            id="themeTrigger"
-            aria-haspopup="dialog"
-            aria-expanded="false"
-            aria-controls="themePopover"
-          >
-            <span class="theme-trigger-swatch" id="themeTriggerSwatch" aria-hidden="true"></span>
-            <span class="theme-trigger-label">
-              <span class="theme-trigger-name" id="themeTriggerName">Classic</span>
-              <span class="theme-trigger-hint">Change theme</span>
-            </span>
-            <span class="theme-trigger-caret" aria-hidden="true">▾</span>
-          </button>
+        <div class="style-grid">
+          <div class="style-col">
+            <p class="style-col-label">Theme</p>
+            <div class="theme-picker" id="themePicker">
+              <button
+                type="button"
+                class="theme-trigger"
+                id="themeTrigger"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                aria-controls="themePopover"
+              >
+                <span class="theme-trigger-swatch" id="themeTriggerSwatch" aria-hidden="true"></span>
+                <span class="theme-trigger-label">
+                  <span class="theme-trigger-name" id="themeTriggerName">Classic</span>
+                  <span class="theme-trigger-hint">Change theme</span>
+                </span>
+                <span class="theme-trigger-caret" aria-hidden="true">▾</span>
+              </button>
 
-          <div
-            class="theme-popover"
-            id="themePopover"
-            role="dialog"
-            aria-label="Choose a theme"
-            hidden
-          >
-            <div class="theme-popover-toolbar">
-              <label class="theme-search">
-                <span class="sr-only">Search themes</span>
-                <input
-                  type="search"
-                  id="themeSearch"
-                  placeholder="Search themes…"
-                  autocomplete="off"
-                  spellcheck="false"
-                />
-              </label>
-              <div class="theme-filters" role="group" aria-label="Filter themes">
-                <button type="button" class="theme-filter is-active" data-filter="all">All</button>
-                <button type="button" class="theme-filter" data-filter="free">Free</button>
-                <button type="button" class="theme-filter" data-filter="pro">Pro</button>
+              <div
+                class="theme-popover"
+                id="themePopover"
+                role="dialog"
+                aria-label="Choose a theme"
+                hidden
+              >
+                <div class="theme-popover-toolbar">
+                  <label class="theme-search">
+                    <span class="sr-only">Search themes</span>
+                    <input
+                      type="search"
+                      id="themeSearch"
+                      placeholder="Search themes…"
+                      autocomplete="off"
+                      spellcheck="false"
+                    />
+                  </label>
+                  <div class="theme-filters" role="group" aria-label="Filter themes">
+                    <button type="button" class="theme-filter is-active" data-filter="all">All</button>
+                    <button type="button" class="theme-filter" data-filter="free">Free</button>
+                    <button type="button" class="theme-filter" data-filter="pro">Pro</button>
+                  </div>
+                </div>
+                <div class="theme-list" id="themeList" role="listbox" aria-label="Themes"></div>
+                <p class="theme-empty" id="themeEmpty" hidden>No themes match.</p>
               </div>
             </div>
-            <div class="theme-list" id="themeList" role="listbox" aria-label="Themes"></div>
-            <p class="theme-empty" id="themeEmpty" hidden>No themes match.</p>
+          </div>
+
+          <div class="style-col">
+            <p class="style-col-label">Character</p>
+            <div class="theme-picker" id="characterPicker">
+              <button
+                type="button"
+                class="theme-trigger"
+                id="characterTrigger"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                aria-controls="characterPopover"
+              >
+                <img class="character-trigger-thumb" id="characterTriggerImg" src="/assets/img/tomatoes/tomato-happy.png" alt="" width="36" height="36" />
+                <span class="theme-trigger-label">
+                  <span class="theme-trigger-name" id="characterTriggerName">Tomo</span>
+                  <span class="theme-trigger-hint">Change character</span>
+                </span>
+                <span class="theme-trigger-caret" aria-hidden="true">▾</span>
+              </button>
+
+              <div
+                class="theme-popover"
+                id="characterPopover"
+                role="dialog"
+                aria-label="Choose a character"
+                hidden
+              >
+                <div class="theme-popover-toolbar">
+                  <label class="theme-search">
+                    <span class="sr-only">Search characters</span>
+                    <input
+                      type="search"
+                      id="characterSearch"
+                      placeholder="Search characters…"
+                      autocomplete="off"
+                      spellcheck="false"
+                    />
+                  </label>
+                </div>
+                <div class="theme-list" id="characterList" role="listbox" aria-label="Characters"></div>
+                <p class="theme-empty" id="characterEmpty" hidden>No characters match.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -109,10 +158,11 @@
       <section class="container panel" id="pro">
         <h2 class="panel-title">TomoFlow Pro</h2>
         <div id="proFreeState">
-          <p class="panel-sub" id="proStatus">Unlock the full theme library — one-time, no account.</p>
+          <p class="panel-sub" id="proStatus">Unlock every theme and character — one-time, no account.</p>
           <p class="price-line"><strong id="proPrice">$21</strong> one-time · no subscription</p>
           <ul class="feature-list">
             <li>Full theme library (and more over time)</li>
+            <li>Extra focus characters to swap in for Tomo</li>
             <li>Same simple timer — just more style</li>
             <li>Unlock stays on this browser after checkout</li>
           </ul>
@@ -122,9 +172,9 @@
           </div>
         </div>
         <div id="proUnlockedState" hidden>
-          <p class="panel-sub">You're Pro on this browser. Browse themes above anytime.</p>
+          <p class="panel-sub">You're Pro on this browser. Browse themes and characters above anytime.</p>
           <div class="timer-actions">
-            <a class="btn btn-secondary" href="#themes">Browse themes</a>
+            <a class="btn btn-secondary" href="#themes">Browse themes &amp; characters</a>
           </div>
         </div>
       </section>
@@ -161,6 +211,7 @@
 
   <script src="/assets/js/config.js"></script>
   <script src="/assets/js/themes.js"></script>
+  <script src="/assets/js/characters.js"></script>
   <script src="/assets/js/nav.js" defer></script>
   <script src="/assets/js/main.js" defer></script>
   <script src="/assets/js/timer.js" defer></script>

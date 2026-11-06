@@ -3,6 +3,8 @@
   const PRO_KEY = "tomoflow_pro";
   const cfg = window.TOMOFLOW_CONFIG || {};
   const THEMES = Array.isArray(window.TOMOFLOW_THEMES) ? window.TOMOFLOW_THEMES : [];
+  const CHARACTERS = Array.isArray(window.TOMOFLOW_CHARACTERS) ? window.TOMOFLOW_CHARACTERS : [];
+  const DEFAULT_CHARACTER_ID = "tomo";
 
   const defaults = {
     workMin: 25,
@@ -10,6 +12,7 @@
     longBreakMin: 15,
     rounds: 4,
     themeId: "classic",
+    characterId: DEFAULT_CHARACTER_ID,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -118,6 +121,7 @@
 
   let themeFilter = "all"; // all | free | pro
   let themeQuery = "";
+  let characterQuery = "";
 
   const display = $("timerDisplay");
   const modeLabel = $("modeLabel");
@@ -136,6 +140,13 @@
   const themeSearch = $("themeSearch");
   const themeTriggerName = $("themeTriggerName");
   const themeTriggerSwatch = $("themeTriggerSwatch");
+  const characterTrigger = $("characterTrigger");
+  const characterPopover = $("characterPopover");
+  const characterList = $("characterList");
+  const characterEmpty = $("characterEmpty");
+  const characterSearch = $("characterSearch");
+  const characterTriggerName = $("characterTriggerName");
+  const characterTriggerImg = $("characterTriggerImg");
 
   const showToast = (msg) => {
     if (!toast) return;
@@ -170,8 +181,9 @@
 
   const findTheme = (themeId) => THEMES.find((t) => t.id === themeId) || THEMES[0];
 
-  const nudgePro = () => {
-    showToast("That theme needs Pro — unlock once for $21");
+  const nudgePro = (what = "theme") => {
+    const price = cfg.proPriceLabel || "$21";
+    showToast(`That ${what} needs Pro — unlock once for ${price}`);
     const proSection = $("pro");
     if (proSection) {
       proSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -195,7 +207,7 @@
     const theme = findTheme(themeId);
     if (!theme) return false;
     if (!theme.free && !isPro()) {
-      if (!silentLock) nudgePro();
+      if (!silentLock) nudgePro("theme");
       return false;
     }
     const root = document.documentElement;
@@ -224,6 +236,7 @@
 
   const setThemePopoverOpen = (open) => {
     if (!themePopover || !themeTrigger) return;
+    if (open) setCharacterPopoverOpen(false);
     themePopover.hidden = !open;
     themeTrigger.setAttribute("aria-expanded", open ? "true" : "false");
     if (open) {
@@ -296,6 +309,116 @@
     });
   };
 
+  // ---- Characters -------------------------------------------------------
+
+  const findCharacter = (characterId) =>
+    CHARACTERS.find((c) => c.id === characterId) ||
+    CHARACTERS.find((c) => c.id === DEFAULT_CHARACTER_ID) ||
+    CHARACTERS[0];
+
+  /** Image for the current character + timer phase (only Tomo has mood variants today). */
+  const characterImageFor = (character, phase) => {
+    if (!character) return "/assets/img/tomatoes/tomato-happy.png";
+    return (character.images && character.images[phase]) || character.image;
+  };
+
+  const escapeHtml = (v) =>
+    String(v).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+
+  const syncCharacterTrigger = () => {
+    const c = findCharacter(settings.characterId);
+    if (!c) return;
+    if (characterTriggerName) characterTriggerName.textContent = c.name;
+    if (characterTriggerImg) characterTriggerImg.src = c.image;
+  };
+
+  const applyCharacter = (characterId, { silentLock } = {}) => {
+    const c = findCharacter(characterId);
+    if (!c) return false;
+    if (!c.free && !isPro()) {
+      if (!silentLock) nudgePro("character");
+      return false;
+    }
+    settings = saveState({ characterId: c.id });
+    syncCharacterTrigger();
+    renderCharacterList();
+    updateChrome();
+    return true;
+  };
+
+  const setCharacterPopoverOpen = (open) => {
+    if (!characterPopover || !characterTrigger) return;
+    if (open && themePopover && !themePopover.hidden) {
+      themePopover.hidden = true;
+      themeTrigger?.setAttribute("aria-expanded", "false");
+    }
+    characterPopover.hidden = !open;
+    characterTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      renderCharacterList();
+      characterSearch?.focus();
+    }
+  };
+
+  const renderCharacterList = () => {
+    if (!characterList) return;
+    const pro = isPro();
+    const q = characterQuery.trim().toLowerCase();
+    const items = CHARACTERS.filter((c) => {
+      if (!q) return true;
+      return `${c.name} ${c.category || ""} ${c.id}`.toLowerCase().includes(q);
+    });
+    if (characterEmpty) characterEmpty.hidden = items.length > 0;
+    characterList.innerHTML = items
+      .map((c) => {
+        const locked = !c.free && !pro;
+        const active = c.id === settings.characterId;
+        return `<button type="button" role="option" class="theme-option${active ? " is-active" : ""}${locked ? " is-locked" : ""}" data-character-id="${escapeHtml(c.id)}" data-pro="${c.free ? "0" : "1"}" aria-selected="${active ? "true" : "false"}">
+        <img class="character-option-thumb" src="${escapeHtml(c.image)}" alt="" width="32" height="32" loading="lazy" />
+        <span class="theme-option-meta">
+          <span class="theme-option-name">${escapeHtml(c.name)}</span>
+          <span class="theme-option-cat">${escapeHtml(c.category || (c.free ? "Free" : "Pro"))}</span>
+        </span>
+        ${locked ? '<span class="theme-lock">Pro</span>' : active ? '<span class="theme-check" aria-hidden="true">✓</span>' : ""}
+      </button>`;
+      })
+      .join("");
+
+    characterList.querySelectorAll("[data-character-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        // Close first so a locked-character nudge to Pro is not covered by the popover.
+        setCharacterPopoverOpen(false);
+        applyCharacter(btn.dataset.characterId);
+      });
+    });
+  };
+
+  const bindCharacterPicker = () => {
+    characterTrigger?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = characterPopover?.hidden !== false;
+      setCharacterPopoverOpen(open);
+    });
+
+    characterSearch?.addEventListener("input", () => {
+      characterQuery = characterSearch.value || "";
+      renderCharacterList();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!characterPopover || characterPopover.hidden) return;
+      const picker = $("characterPicker");
+      if (picker && !picker.contains(e.target)) setCharacterPopoverOpen(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && characterPopover && !characterPopover.hidden) {
+        setCharacterPopoverOpen(false);
+        characterTrigger?.focus();
+      }
+    });
+  };
+
   const updateChrome = () => {
     if (display) display.textContent = format(remainingMs);
     if (modeLabel) {
@@ -306,11 +429,11 @@
       roundLabel.textContent = `Round ${displayRound()} / ${settings.rounds}`;
     }
     if (tomatoImg) {
-      tomatoImg.src =
-        mode === "work"
-          ? "/assets/img/tomatoes/tomato-happy.png"
-          : "/assets/img/tomatoes/tomato-withered.png";
-      tomatoImg.alt = mode === "work" ? "Focus tomato" : "Break tomato";
+      const character = findCharacter(settings.characterId);
+      const src = characterImageFor(character, mode);
+      if (tomatoImg.getAttribute("src") !== src) tomatoImg.src = src;
+      const name = character ? character.name : "Tomo";
+      tomatoImg.alt = `${name}, ${mode === "work" ? "focus" : "break"}`;
     }
     if (startBtn) startBtn.disabled = running;
     if (pauseBtn) pauseBtn.disabled = !running;
@@ -513,6 +636,7 @@
       demo.addEventListener("click", () => {
         setPro(true);
         applyTheme(settings.themeId);
+        applyCharacter(settings.characterId, { silentLock: true });
         updateProUi();
         showToast("Pro unlocked on this device");
       });
@@ -533,10 +657,12 @@
     if (unlockedState) unlockedState.hidden = !pro;
     const status = $("proStatus");
     if (status && !pro) {
-      status.textContent = "Unlock the full theme library — one-time, no account.";
+      status.textContent = "Unlock every theme and character — one-time, no account.";
     }
     renderThemeList();
     syncThemeTrigger();
+    renderCharacterList();
+    syncCharacterTrigger();
   };
 
   const bindTip = () => {
@@ -585,10 +711,16 @@
   bindPro();
   bindTip();
   bindThemePicker();
+  bindCharacterPicker();
   renderThemeList();
   // If a saved Pro theme exists but Pro isn't unlocked, fall back silently.
   if (!applyTheme(settings.themeId, { silentLock: true })) {
     applyTheme("classic", { silentLock: true });
+  }
+  // Same for a saved Pro character without Pro (or an id that no longer exists).
+  const savedCharacter = CHARACTERS.find((c) => c.id === settings.characterId);
+  if (!savedCharacter || !applyCharacter(savedCharacter.id, { silentLock: true })) {
+    applyCharacter(DEFAULT_CHARACTER_ID, { silentLock: true });
   }
   remainingMs = durationFor(mode);
   updateChrome();
