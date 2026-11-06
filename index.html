@@ -164,7 +164,7 @@
             <li>Full theme library (and more over time)</li>
             <li>Extra focus characters to swap in for Tomo</li>
             <li>Same simple timer — just more style</li>
-            <li>Unlock stays on this browser after checkout</li>
+            <li>Unlock stays on this browser; restore anytime with your purchase email</li>
           </ul>
           <div class="timer-actions">
             <button type="button" class="btn btn-primary" id="btnUnlockPro">Unlock Pro</button>
@@ -176,6 +176,25 @@
           <div class="timer-actions">
             <a class="btn btn-secondary" href="#themes">Browse themes &amp; characters</a>
           </div>
+        </div>
+        <div class="restore-pro" id="restorePro">
+          <p class="restore-pro-title">Already bought? Restore Pro</p>
+          <p class="restore-pro-sub">Use the email on your Stripe receipt. Tips never unlock Pro.</p>
+          <form class="restore-pro-form" id="restoreProForm">
+            <label class="field restore-pro-field">
+              <span class="sr-only">Purchase email</span>
+              <input
+                id="restoreEmail"
+                type="email"
+                name="email"
+                autocomplete="email"
+                required
+                placeholder="you@example.com"
+                maxlength="254"
+              />
+            </label>
+            <button type="submit" class="btn btn-secondary" id="btnRestorePro">Restore Pro</button>
+          </form>
         </div>
       </section>
 

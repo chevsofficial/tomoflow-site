@@ -99,6 +99,7 @@
       setPro(true);
       params.delete("pro");
       params.delete("unlocked");
+      params.delete("restore");
       const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", clean);
     }
@@ -641,6 +642,74 @@
         showToast("Pro unlocked on this device");
       });
     }
+    bindRestorePro();
+  };
+
+  const bindRestorePro = () => {
+    const form = $("restoreProForm");
+    const emailInput = $("restoreEmail");
+    const btn = $("btnRestorePro");
+    if (!form || !emailInput || !btn) return;
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const email = (emailInput.value || "").trim();
+      if (!email) {
+        showToast("Enter the email on your Stripe receipt");
+        emailInput.focus();
+        return;
+      }
+
+      if (isPro()) {
+        showToast("Pro is already unlocked on this browser");
+        return;
+      }
+
+      btn.disabled = true;
+      const prevLabel = btn.textContent;
+      btn.textContent = "Checking…";
+      try {
+        const res = await fetch("/api/restore-pro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+
+        if (res.status === 501) {
+          showToast(data.error || "Restore isn't configured yet");
+          return;
+        }
+        if (!res.ok) {
+          showToast(data.error || "Could not restore Pro — try again");
+          return;
+        }
+
+        if (data.unlocked) {
+          setPro(true);
+          applyTheme(settings.themeId, { silentLock: true });
+          applyCharacter(settings.characterId, { silentLock: true });
+          updateProUi();
+          showToast(data.message || "Pro restored on this browser");
+          return;
+        }
+        if (data.emailed) {
+          showToast(data.message || "Check your email for a restore link");
+          return;
+        }
+        showToast(data.message || "We found your purchase — check support if Pro didn't unlock");
+      } catch {
+        showToast("Network error — try restore again");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+      }
+    });
   };
 
   const updateProUi = () => {

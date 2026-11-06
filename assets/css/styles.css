@@ -291,3 +291,40 @@ a:hover { filter: brightness(1.1); }
   padding: 10px; border-radius: 12px;
 }
 .drawer-nav a:hover { background: rgba(255,255,255,0.06); color: var(--textPrimary); }
+
+/* Restore Pro */
+.restore-pro {
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.restore-pro-title {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--textPrimary);
+}
+.restore-pro-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--textMuted);
+}
+.restore-pro-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+.restore-pro-field { flex: 1 1 12rem; min-width: 0; }
+.restore-pro-field input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surfaceAlt);
+  border: 1px solid var(--border);
+  color: var(--textPrimary);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.restore-pro-form .btn { flex: 0 0 auto; }
