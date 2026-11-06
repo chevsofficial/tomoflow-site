@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TomoFlow — Simple Pomodoro Timer</title>
-  <meta name="description" content="TomoFlow is a simple, local-first Pomodoro timer in your browser. Free themes, optional one-time Pro unlock, and Bitcoin tips. No account required." />
+  <meta name="description" content="TomoFlow is a simple Pomodoro timer in your browser. Free themes, optional one-time Pro unlock, and optional Bitcoin tips. No account required." />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-48-transparent.png" />
 </head>
@@ -14,8 +14,7 @@
 
     <main>
       <section class="container timer-hero">
-        <div class="timer-badge-row">
-          <span class="hero-badge">Local-first · No account</span>
+        <div class="timer-badge-row" id="proBadgeRow">
           <span class="pro-pill" id="proBadge" hidden>Pro</span>
         </div>
 
@@ -58,35 +57,95 @@
 
       <section class="container panel" id="themes">
         <h2 class="panel-title">Themes</h2>
-        <p class="panel-sub">A few free. More with a one-time Pro unlock.</p>
-        <div class="theme-grid" id="themeGrid"></div>
+        <p class="panel-sub">A few free. Unlock Pro for the full library.</p>
+
+        <div class="theme-picker" id="themePicker">
+          <button
+            type="button"
+            class="theme-trigger"
+            id="themeTrigger"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="themePopover"
+          >
+            <span class="theme-trigger-swatch" id="themeTriggerSwatch" aria-hidden="true"></span>
+            <span class="theme-trigger-label">
+              <span class="theme-trigger-name" id="themeTriggerName">Classic</span>
+              <span class="theme-trigger-hint">Change theme</span>
+            </span>
+            <span class="theme-trigger-caret" aria-hidden="true">▾</span>
+          </button>
+
+          <div
+            class="theme-popover"
+            id="themePopover"
+            role="dialog"
+            aria-label="Choose a theme"
+            hidden
+          >
+            <div class="theme-popover-toolbar">
+              <label class="theme-search">
+                <span class="sr-only">Search themes</span>
+                <input
+                  type="search"
+                  id="themeSearch"
+                  placeholder="Search themes…"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </label>
+              <div class="theme-filters" role="group" aria-label="Filter themes">
+                <button type="button" class="theme-filter is-active" data-filter="all">All</button>
+                <button type="button" class="theme-filter" data-filter="free">Free</button>
+                <button type="button" class="theme-filter" data-filter="pro">Pro</button>
+              </div>
+            </div>
+            <div class="theme-list" id="themeList" role="listbox" aria-label="Themes"></div>
+            <p class="theme-empty" id="themeEmpty" hidden>No themes match.</p>
+          </div>
+        </div>
       </section>
 
       <section class="container panel" id="pro">
         <h2 class="panel-title">TomoFlow Pro</h2>
-        <p class="panel-sub" id="proStatus">Free timer · Pro unlocks extra themes.</p>
-        <p class="price-line"><strong id="proPrice">$21</strong> one-time · no subscription · no account</p>
-        <ul class="feature-list">
-          <li>Extra theme pack</li>
-          <li>Same simple timer — just more style</li>
-          <li>Unlock stored locally after Stripe success (<code>?pro=1</code>)</li>
-        </ul>
-        <div class="timer-actions">
-          <button type="button" class="btn btn-primary" id="btnUnlockPro">Unlock Pro</button>
-          <button type="button" class="btn btn-secondary" id="btnDemoPro" title="Dev helper until Stripe is wired">Mark Pro (local)</button>
+        <div id="proFreeState">
+          <p class="panel-sub" id="proStatus">Unlock the full theme library — one-time, no account.</p>
+          <p class="price-line"><strong id="proPrice">$21</strong> one-time · no subscription</p>
+          <ul class="feature-list">
+            <li>Full theme library (and more over time)</li>
+            <li>Same simple timer — just more style</li>
+            <li>Unlock stays on this browser after checkout</li>
+          </ul>
+          <div class="timer-actions">
+            <button type="button" class="btn btn-primary" id="btnUnlockPro">Unlock Pro</button>
+            <button type="button" class="btn btn-secondary" id="btnDemoPro" hidden title="Dev helper">Mark Pro (local)</button>
+          </div>
+        </div>
+        <div id="proUnlockedState" hidden>
+          <p class="panel-sub">You're Pro on this browser. Browse themes above anytime.</p>
+          <div class="timer-actions">
+            <a class="btn btn-secondary" href="#themes">Browse themes</a>
+          </div>
         </div>
       </section>
 
-      <section class="container panel" id="tip">
-        <h2 class="panel-title">Optional Bitcoin tip</h2>
-        <p class="panel-sub">On-chain only. Tips are voluntary and do not unlock Pro.</p>
-        <div class="tip-row">
-          <img id="btcQr" class="btc-qr" width="168" height="168" alt="Bitcoin tip QR code" />
-          <div class="tip-copy">
-            <code class="btc-address" id="btcAddress">REPLACE_WITH_BTC_ADDRESS</code>
-            <button type="button" class="btn btn-secondary" id="btnCopyBtc">Copy address</button>
+      <section class="container panel tip-panel" id="tip">
+        <details class="tip-disclosure" id="tipDisclosure">
+          <summary class="tip-summary">
+            <span class="tip-summary-title">Support TomoFlow</span>
+            <span class="tip-summary-sub">Optional Bitcoin tip · does not unlock Pro</span>
+          </summary>
+          <div class="tip-body">
+            <p class="panel-sub tip-body-note">On-chain only. Tips are voluntary and never unlock Pro.</p>
+            <div class="tip-row">
+              <img id="btcQr" class="btc-qr" width="168" height="168" alt="Bitcoin tip QR code" />
+              <div class="tip-copy">
+                <code class="btc-address" id="btcAddress">REPLACE_WITH_BTC_ADDRESS</code>
+                <button type="button" class="btn btn-secondary" id="btnCopyBtc">Copy address</button>
+              </div>
+            </div>
           </div>
-        </div>
+        </details>
       </section>
     </main>
 
@@ -101,6 +160,7 @@
   </div>
 
   <script src="/assets/js/config.js"></script>
+  <script src="/assets/js/themes.js"></script>
   <script src="/assets/js/nav.js" defer></script>
   <script src="/assets/js/main.js" defer></script>
   <script src="/assets/js/timer.js" defer></script>

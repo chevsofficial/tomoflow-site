@@ -1,15 +1,16 @@
 # TomoFlow Website
 
-Simple **local-first** Pomodoro timer for the browser. No accounts, no Expo web bundle, no Supabase sync.
+Simple Pomodoro timer for the browser. No accounts required.
 
-Live experience is `/` — timer, settings, themes, optional Pro unlock, optional on-chain Bitcoin tip.
+Live experience is `/` — timer, settings, theme picker, optional one-time Pro unlock, optional on-chain Bitcoin tip.
 
 ## Structure
 
 - `index.html` — Timer app (main experience)
-- `privacy.html` / `terms.html` / `support.html` — Legal & help (local-first + one-time Pro + BTC tips)
-- `assets/js/config.js` — **Stripe Payment Link** + **BTC address** placeholders
-- `assets/js/timer.js` — Timer, localStorage, themes, Pro unlock, tip UI
+- `privacy.html` / `terms.html` / `support.html` — Legal & help
+- `assets/js/config.js` — Stripe Payment Link + BTC address placeholders
+- `assets/js/themes.js` — Theme catalog (add themes here; picker scales)
+- `assets/js/timer.js` — Timer, localStorage, theme picker, Pro unlock, tip UI
 - `assets/js/nav.js` / `main.js` — Header/footer helpers
 - `assets/css/styles.css` — Shared styles + themes
 - `assets/img/` — Logo, favicon, tomato art
@@ -18,15 +19,15 @@ Live experience is `/` — timer, settings, themes, optional Pro unlock, optiona
 
 ## Monetization
 
-1. **Pro (one-time ~$21)** — Stripe Payment Link. Success URL should be `https://YOUR_DOMAIN/?pro=1` (or `?unlocked=1`). The page stores `tomoflow_pro=1` in localStorage and unlocks Pro themes.
-2. **Optional Bitcoin tip** — On-chain address + QR + copy. Tips do **not** unlock Pro.
+1. **Pro (one-time ~$21)** — Stripe Payment Link. After payment, redirect back to the site so this browser unlocks Pro themes (`tomoflow_pro` in localStorage).
+2. **Optional Bitcoin tip** — On-chain address + QR + copy, collapsed under Support. Tips do **not** unlock Pro.
 
 ### Stripe Payment Link setup
 
 1. In Stripe Dashboard → Payment Links → create a **one-time** product for **$21**.
-2. Set **After payment → Redirect to** your site with `?pro=1`.
+2. Set **After payment → Redirect to** your site with a Pro unlock query (see `proUnlockParams` in `config.js`).
 3. Paste the link into `assets/js/config.js` as `stripePaymentLink`.
-4. (Optional) Remove the “Mark Pro (local)” button before a public launch — it is a setup helper.
+4. Local Pro testing: open the site with `?dev=1` to reveal **Mark Pro (local)**.
 
 ### Bitcoin tip address
 
@@ -43,10 +44,4 @@ npx --yes serve .
 
 Open `http://localhost:3000` (or the port shown).
 
-## What was removed
-
-- Expo export under `/app` and related Vercel SPA rewrites
-- Auth pages / Supabase client in nav
-- Stripe Checkout + webhook API that synced subscriptions to Supabase
-
-Mobile apps (if any) live in other repositories; this repo is the simplified web timer.
+Mobile apps (if any) live in other repositories; this repo is the web timer.

@@ -2,7 +2,7 @@
 // See README for Stripe Payment Link + BTC address setup.
 window.TOMOFLOW_CONFIG = {
   // One-time Pro unlock ($21). Create a Stripe Payment Link and paste the URL.
-  // Success URL should point to: https://YOUR_DOMAIN/?pro=1
+  // After payment, redirect back to the site with a Pro unlock query (below).
   stripePaymentLink: "REPLACE_WITH_STRIPE_PAYMENT_LINK",
 
   // On-chain Bitcoin tip address (no entitlement; optional support).

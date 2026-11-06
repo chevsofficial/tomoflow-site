@@ -2,17 +2,7 @@
   const STORAGE_KEY = "tomoflow_web_v1";
   const PRO_KEY = "tomoflow_pro";
   const cfg = window.TOMOFLOW_CONFIG || {};
-
-  const THEMES = [
-    { id: "classic", name: "Classic", free: true, vars: { primary: "#FF5A5F", accent: "#00A896", bg: "#121417", surface: "#1E2126", surfaceAlt: "#2A2E35" } },
-    { id: "midnight", name: "Midnight", free: true, vars: { primary: "#7C9CFF", accent: "#5EEAD4", bg: "#0B1020", surface: "#151B2E", surfaceAlt: "#1F2740" } },
-    { id: "forest", name: "Forest", free: true, vars: { primary: "#3DDC97", accent: "#F4A261", bg: "#0F1612", surface: "#18241C", surfaceAlt: "#24332A" } },
-    { id: "sunset", name: "Sunset", free: false, vars: { primary: "#FF7A59", accent: "#FFD166", bg: "#1A1210", surface: "#2A1B17", surfaceAlt: "#3A2620" } },
-    { id: "ocean", name: "Ocean", free: false, vars: { primary: "#38BDF8", accent: "#A78BFA", bg: "#07131C", surface: "#0E1F2C", surfaceAlt: "#163244" } },
-    { id: "lavender", name: "Lavender", free: false, vars: { primary: "#C084FC", accent: "#F9A8D4", bg: "#140F1A", surface: "#21182A", surfaceAlt: "#2E223A" } },
-    { id: "mono", name: "Mono", free: false, vars: { primary: "#E5E7EB", accent: "#9CA3AF", bg: "#0A0A0A", surface: "#171717", surfaceAlt: "#262626" } },
-    { id: "neon", name: "Neon", free: false, vars: { primary: "#39FF14", accent: "#FF00E5", bg: "#050805", surface: "#0D140E", surfaceAlt: "#152016" } },
-  ];
+  const THEMES = Array.isArray(window.TOMOFLOW_THEMES) ? window.TOMOFLOW_THEMES : [];
 
   const defaults = {
     workMin: 25,
@@ -89,6 +79,12 @@
     }
   };
 
+  const isDevMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get("dev");
+    return v === "1" || v === "true" || v === "yes";
+  };
+
   const consumeUnlockFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
     const keys = cfg.proUnlockParams || ["pro", "unlocked"];
@@ -120,6 +116,9 @@
   /** Bumped whenever a timed phase ends or is cancelled, to ignore stale timeouts. */
   let phaseEpoch = 0;
 
+  let themeFilter = "all"; // all | free | pro
+  let themeQuery = "";
+
   const display = $("timerDisplay");
   const modeLabel = $("modeLabel");
   const roundLabel = $("roundLabel");
@@ -130,6 +129,13 @@
   const skipBtn = $("btnSkip");
   const proBadge = $("proBadge");
   const toast = $("toast");
+  const themeTrigger = $("themeTrigger");
+  const themePopover = $("themePopover");
+  const themeList = $("themeList");
+  const themeEmpty = $("themeEmpty");
+  const themeSearch = $("themeSearch");
+  const themeTriggerName = $("themeTriggerName");
+  const themeTriggerSwatch = $("themeTriggerSwatch");
 
   const showToast = (msg) => {
     if (!toast) return;
@@ -162,21 +168,132 @@
 
   const displayRound = () => (completedRounds % settings.rounds) + 1;
 
-  const applyTheme = (themeId) => {
-    const theme = THEMES.find((t) => t.id === themeId) || THEMES[0];
+  const findTheme = (themeId) => THEMES.find((t) => t.id === themeId) || THEMES[0];
+
+  const nudgePro = () => {
+    showToast("That theme needs Pro — unlock once for $21");
+    const proSection = $("pro");
+    if (proSection) {
+      proSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      proSection.classList.add("is-highlight");
+      clearTimeout(nudgePro._t);
+      nudgePro._t = setTimeout(() => proSection.classList.remove("is-highlight"), 1600);
+    }
+  };
+
+  const syncThemeTrigger = () => {
+    const theme = findTheme(settings.themeId);
+    if (!theme) return;
+    if (themeTriggerName) themeTriggerName.textContent = theme.name;
+    if (themeTriggerSwatch) {
+      themeTriggerSwatch.style.setProperty("--swatch", theme.vars.primary);
+      themeTriggerSwatch.style.background = `linear-gradient(135deg, ${theme.vars.primary}, ${theme.vars.accent})`;
+    }
+  };
+
+  const applyTheme = (themeId, { silentLock } = {}) => {
+    const theme = findTheme(themeId);
+    if (!theme) return false;
     if (!theme.free && !isPro()) {
-      showToast("That theme needs Pro — unlock once for $21");
+      if (!silentLock) nudgePro();
       return false;
     }
     const root = document.documentElement;
     Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(`--${k}`, v));
     settings = saveState({ themeId: theme.id });
+    syncThemeTrigger();
     document.querySelectorAll("[data-theme-id]").forEach((el) => {
       el.classList.toggle("is-active", el.dataset.themeId === theme.id);
       const locked = el.dataset.pro === "1" && !isPro();
       el.classList.toggle("is-locked", locked);
+      el.setAttribute("aria-selected", el.dataset.themeId === theme.id ? "true" : "false");
     });
     return true;
+  };
+
+  const filteredThemes = () => {
+    const q = themeQuery.trim().toLowerCase();
+    return THEMES.filter((t) => {
+      if (themeFilter === "free" && !t.free) return false;
+      if (themeFilter === "pro" && t.free) return false;
+      if (!q) return true;
+      const hay = `${t.name} ${t.category || ""} ${t.id}`.toLowerCase();
+      return hay.includes(q);
+    });
+  };
+
+  const setThemePopoverOpen = (open) => {
+    if (!themePopover || !themeTrigger) return;
+    themePopover.hidden = !open;
+    themeTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      renderThemeList();
+      themeSearch?.focus();
+    }
+  };
+
+  const renderThemeList = () => {
+    if (!themeList) return;
+    const pro = isPro();
+    const items = filteredThemes();
+    if (themeEmpty) themeEmpty.hidden = items.length > 0;
+    themeList.innerHTML = items
+      .map((t) => {
+        const locked = !t.free && !pro;
+        const active = t.id === settings.themeId;
+        return `<button type="button" role="option" class="theme-option${active ? " is-active" : ""}${locked ? " is-locked" : ""}" data-theme-id="${t.id}" data-pro="${t.free ? "0" : "1"}" aria-selected="${active ? "true" : "false"}">
+        <span class="theme-option-swatch" style="--swatch:${t.vars.primary}; background: linear-gradient(135deg, ${t.vars.primary}, ${t.vars.accent})"></span>
+        <span class="theme-option-meta">
+          <span class="theme-option-name">${t.name}</span>
+          <span class="theme-option-cat">${t.category || (t.free ? "Free" : "Pro")}</span>
+        </span>
+        ${locked ? '<span class="theme-lock">Pro</span>' : active ? '<span class="theme-check" aria-hidden="true">✓</span>' : ""}
+      </button>`;
+      })
+      .join("");
+    themeList.querySelectorAll("[data-theme-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        // Always close so a locked-theme nudge to Pro is not covered by the popover.
+        applyTheme(btn.dataset.themeId);
+        setThemePopoverOpen(false);
+      });
+    });
+  };
+
+  const bindThemePicker = () => {
+    themeTrigger?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = themePopover?.hidden !== false;
+      setThemePopoverOpen(open);
+    });
+
+    themeSearch?.addEventListener("input", () => {
+      themeQuery = themeSearch.value || "";
+      renderThemeList();
+    });
+
+    document.querySelectorAll(".theme-filter").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        themeFilter = btn.dataset.filter || "all";
+        document.querySelectorAll(".theme-filter").forEach((b) => {
+          b.classList.toggle("is-active", b === btn);
+        });
+        renderThemeList();
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!themePopover || themePopover.hidden) return;
+      const picker = $("themePicker");
+      if (picker && !picker.contains(e.target)) setThemePopoverOpen(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && themePopover && !themePopover.hidden) {
+        setThemePopoverOpen(false);
+        themeTrigger?.focus();
+      }
+    });
   };
 
   const updateChrome = () => {
@@ -371,27 +488,6 @@
     return Math.min(max, Math.max(min, n));
   };
 
-  const renderThemes = () => {
-    const grid = $("themeGrid");
-    if (!grid) return;
-    let pro = false;
-    try {
-      pro = isPro();
-    } catch {
-      pro = false;
-    }
-    grid.innerHTML = THEMES.map((t) => {
-      const locked = !t.free && !pro;
-      return `<button type="button" class="theme-swatch${t.id === settings.themeId ? " is-active" : ""}${locked ? " is-locked" : ""}" data-theme-id="${t.id}" data-pro="${t.free ? "0" : "1"}" style="--swatch:${t.vars.primary}" title="${t.name}${locked ? " (Pro)" : ""}">
-        <span class="theme-name">${t.name}</span>
-        ${locked ? '<span class="theme-lock">Pro</span>' : ""}
-      </button>`;
-    }).join("");
-    grid.querySelectorAll("[data-theme-id]").forEach((btn) => {
-      btn.addEventListener("click", () => applyTheme(btn.dataset.themeId));
-    });
-  };
-
   const bindPro = () => {
     const price = $("proPrice");
     if (price) price.textContent = cfg.proPriceLabel || "$21";
@@ -401,40 +497,46 @@
       unlockBtn.addEventListener("click", () => {
         if (isPro()) {
           showToast("Pro is already unlocked on this browser");
+          updateProUi();
           return;
         }
         if (!link || link.includes("REPLACE_WITH")) {
-          showToast("Set stripePaymentLink in assets/js/config.js");
+          showToast("Checkout isn't configured yet — try again soon");
           return;
         }
         window.location.href = link;
       });
     }
     const demo = $("btnDemoPro");
-    demo?.addEventListener("click", () => {
-      setPro(true);
-      renderThemes();
-      applyTheme(settings.themeId);
-      updateProUi();
-      showToast("Pro unlocked on this device");
-    });
+    if (demo) {
+      demo.hidden = !isDevMode();
+      demo.addEventListener("click", () => {
+        setPro(true);
+        applyTheme(settings.themeId);
+        updateProUi();
+        showToast("Pro unlocked on this device");
+      });
+    }
   };
 
   const updateProUi = () => {
-    const status = $("proStatus");
     let pro = false;
     try {
       pro = isPro();
     } catch {
       pro = false;
     }
-    if (status) {
-      status.textContent = pro
-        ? "Pro unlocked on this browser (local)."
-        : "Free timer · Pro unlocks extra themes.";
-    }
     if (proBadge) proBadge.hidden = !pro;
-    renderThemes();
+    const freeState = $("proFreeState");
+    const unlockedState = $("proUnlockedState");
+    if (freeState) freeState.hidden = !!pro;
+    if (unlockedState) unlockedState.hidden = !pro;
+    const status = $("proStatus");
+    if (status && !pro) {
+      status.textContent = "Unlock the full theme library — one-time, no account.";
+    }
+    renderThemeList();
+    syncThemeTrigger();
   };
 
   const bindTip = () => {
@@ -450,7 +552,7 @@
     }
     copyBtn?.addEventListener("click", async () => {
       if (addr.includes("REPLACE_WITH")) {
-        showToast("Replace REPLACE_WITH_BTC_ADDRESS in config.js first");
+        showToast("Tip address isn't configured yet");
         return;
       }
       try {
@@ -482,8 +584,12 @@
   bindSettings();
   bindPro();
   bindTip();
-  renderThemes();
-  applyTheme(settings.themeId);
+  bindThemePicker();
+  renderThemeList();
+  // If a saved Pro theme exists but Pro isn't unlocked, fall back silently.
+  if (!applyTheme(settings.themeId, { silentLock: true })) {
+    applyTheme("classic", { silentLock: true });
+  }
   remainingMs = durationFor(mode);
   updateChrome();
   updateProUi();
