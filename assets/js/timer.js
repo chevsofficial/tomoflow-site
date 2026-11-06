@@ -24,9 +24,39 @@
 
   const $ = (id) => document.getElementById(id);
 
+  /** In-memory fallback when localStorage throws (private mode / blocked). */
+  const memoryStore = Object.create(null);
+
+  const storageGet = (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+    }
+  };
+
+  const storageSet = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+      return;
+    } catch {
+      memoryStore[key] = String(value);
+    }
+  };
+
+  const storageRemove = (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+    delete memoryStore[key];
+  };
+
   const loadState = () => {
     try {
-      return { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+      const raw = storageGet(STORAGE_KEY);
+      return { ...defaults, ...JSON.parse(raw || "{}") };
     } catch {
       return { ...defaults };
     }
@@ -34,15 +64,29 @@
 
   const saveState = (partial) => {
     const next = { ...loadState(), ...partial };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    try {
+      storageSet(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* storageSet already fell back to memory */
+    }
     return next;
   };
 
-  const isPro = () => localStorage.getItem(PRO_KEY) === "1";
+  const isPro = () => {
+    try {
+      return storageGet(PRO_KEY) === "1";
+    } catch {
+      return false;
+    }
+  };
 
   const setPro = (on) => {
-    if (on) localStorage.setItem(PRO_KEY, "1");
-    else localStorage.removeItem(PRO_KEY);
+    try {
+      if (on) storageSet(PRO_KEY, "1");
+      else storageRemove(PRO_KEY);
+    } catch {
+      /* ignore — storage helpers already fall back to memory */
+    }
   };
 
   const consumeUnlockFromUrl = () => {
@@ -65,9 +109,16 @@
   let mode = "work"; // work | break | long
   let remainingMs = settings.workMin * 60 * 1000;
   let running = false;
+  /** True when the user paused mid-phase (vs idle at full phase duration). */
+  let paused = false;
   let completedRounds = 0;
   let raf = null;
-  let lastTick = 0;
+  /** Absolute Date.now() when the current phase should end (while running). */
+  let deadlineAt = null;
+  /** setTimeout id for phase completion — fires even when the tab is hidden. */
+  let completeTimer = null;
+  /** Bumped whenever a timed phase ends or is cancelled, to ignore stale timeouts. */
+  let phaseEpoch = 0;
 
   const display = $("timerDisplay");
   const modeLabel = $("modeLabel");
@@ -103,6 +154,14 @@
     return settings.breakMin * 60 * 1000;
   };
 
+  const durationKeyFor = (m) => {
+    if (m === "work") return "workMin";
+    if (m === "long") return "longBreakMin";
+    return "breakMin";
+  };
+
+  const displayRound = () => (completedRounds % settings.rounds) + 1;
+
   const applyTheme = (themeId) => {
     const theme = THEMES.find((t) => t.id === themeId) || THEMES[0];
     if (!theme.free && !isPro()) {
@@ -127,7 +186,7 @@
         mode === "work" ? "Focus" : mode === "long" ? "Long break" : "Short break";
     }
     if (roundLabel) {
-      roundLabel.textContent = `Round ${Math.min(completedRounds + 1, settings.rounds)} / ${settings.rounds}`;
+      roundLabel.textContent = `Round ${displayRound()} / ${settings.rounds}`;
     }
     if (tomatoImg) {
       tomatoImg.src =
@@ -145,12 +204,37 @@
     document.title = `${format(remainingMs)} · TomoFlow`;
   };
 
-  const tick = (now) => {
+  const clearCompleteTimer = () => {
+    if (completeTimer != null) {
+      clearTimeout(completeTimer);
+      completeTimer = null;
+    }
+  };
+
+  const syncRemainingFromDeadline = () => {
+    if (!running || deadlineAt == null) return remainingMs;
+    remainingMs = Math.max(0, deadlineAt - Date.now());
+    return remainingMs;
+  };
+
+  const schedulePhaseComplete = () => {
+    clearCompleteTimer();
+    if (!running || deadlineAt == null) return;
+    const epoch = phaseEpoch;
+    const ms = Math.max(0, deadlineAt - Date.now());
+    completeTimer = setTimeout(() => {
+      completeTimer = null;
+      if (epoch !== phaseEpoch || !running) return;
+      remainingMs = 0;
+      updateChrome();
+      completePhase();
+    }, ms);
+  };
+
+  /** UI loop; completion also scheduled via setTimeout so it fires while the tab is hidden. */
+  const tick = () => {
     if (!running) return;
-    if (!lastTick) lastTick = now;
-    const delta = now - lastTick;
-    lastTick = now;
-    remainingMs -= delta;
+    syncRemainingFromDeadline();
     if (remainingMs <= 0) {
       remainingMs = 0;
       updateChrome();
@@ -164,27 +248,44 @@
   const start = () => {
     if (running) return;
     running = true;
-    lastTick = 0;
+    paused = false;
+    deadlineAt = Date.now() + remainingMs;
+    schedulePhaseComplete();
+    if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(tick);
     updateChrome();
   };
 
   const pause = () => {
+    if (running) {
+      syncRemainingFromDeadline();
+      paused = true;
+    }
+    phaseEpoch += 1;
     running = false;
+    deadlineAt = null;
+    clearCompleteTimer();
     if (raf) cancelAnimationFrame(raf);
     raf = null;
-    lastTick = 0;
     updateChrome();
   };
 
   const resetPhase = () => {
     pause();
+    paused = false;
     remainingMs = durationFor(mode);
     updateChrome();
   };
 
   const completePhase = () => {
-    pause();
+    phaseEpoch += 1;
+    running = false;
+    paused = false;
+    deadlineAt = null;
+    clearCompleteTimer();
+    if (raf) cancelAnimationFrame(raf);
+    raf = null;
+
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const o = ctx.createOscillator();
@@ -229,6 +330,7 @@
     if (rounds) rounds.value = settings.rounds;
 
     const persist = () => {
+      const prev = { ...settings };
       const next = {
         workMin: clampInt(work?.value, 1, 120, 25),
         breakMin: clampInt(brk?.value, 1, 60, 5),
@@ -236,9 +338,27 @@
         rounds: clampInt(rounds?.value, 1, 12, 4),
       };
       settings = saveState(next);
-      if (!running) {
+
+      const phaseKey = durationKeyFor(mode);
+      const phaseDurationChanged = prev[phaseKey] !== next[phaseKey];
+
+      if (running) {
+        if (phaseDurationChanged) {
+          // Restart the current phase with the new duration for this mode.
+          remainingMs = durationFor(mode);
+          deadlineAt = Date.now() + remainingMs;
+          schedulePhaseComplete();
+        }
+      } else if (!paused) {
+        // Idle at a full phase — keep remaining in sync with settings.
         remainingMs = durationFor(mode);
+      } else if (phaseDurationChanged) {
+        // Paused, but the duration for *this* phase changed — reset that phase.
+        remainingMs = durationFor(mode);
+        paused = false;
       }
+      // else: paused + unrelated setting (e.g. break while on work) — keep progress
+
       updateChrome();
     };
 
@@ -254,8 +374,14 @@
   const renderThemes = () => {
     const grid = $("themeGrid");
     if (!grid) return;
+    let pro = false;
+    try {
+      pro = isPro();
+    } catch {
+      pro = false;
+    }
     grid.innerHTML = THEMES.map((t) => {
-      const locked = !t.free && !isPro();
+      const locked = !t.free && !pro;
       return `<button type="button" class="theme-swatch${t.id === settings.themeId ? " is-active" : ""}${locked ? " is-locked" : ""}" data-theme-id="${t.id}" data-pro="${t.free ? "0" : "1"}" style="--swatch:${t.vars.primary}" title="${t.name}${locked ? " (Pro)" : ""}">
         <span class="theme-name">${t.name}</span>
         ${locked ? '<span class="theme-lock">Pro</span>' : ""}
@@ -296,12 +422,18 @@
 
   const updateProUi = () => {
     const status = $("proStatus");
+    let pro = false;
+    try {
+      pro = isPro();
+    } catch {
+      pro = false;
+    }
     if (status) {
-      status.textContent = isPro()
+      status.textContent = pro
         ? "Pro unlocked on this browser (local)."
         : "Free timer · Pro unlocks extra themes.";
     }
-    if (proBadge) proBadge.hidden = !isPro();
+    if (proBadge) proBadge.hidden = !pro;
     renderThemes();
   };
 
@@ -329,6 +461,17 @@
       }
     });
   };
+
+  // Keep the UI in sync when returning to a backgrounded tab; completion already
+  // fires via setTimeout even while hidden.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !running) return;
+    syncRemainingFromDeadline();
+    updateChrome();
+    if (remainingMs > 0 && raf == null) {
+      raf = requestAnimationFrame(tick);
+    }
+  });
 
   startBtn?.addEventListener("click", start);
   pauseBtn?.addEventListener("click", pause);

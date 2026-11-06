@@ -69,6 +69,11 @@ main { flex: 1; padding: 1.25rem 0 2.5rem; }
   display: inline-flex; padding: 0.2rem 0.55rem; border-radius: 999px; background: var(--accent);
   color: #04110f; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase;
 }
+/* display:inline-flex above would otherwise override the hidden attribute */
+.pro-pill[hidden],
+[hidden] {
+  display: none !important;
+}
 .timer-badge-row { display: flex; gap: 0.5rem; justify-content: center; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
 
 .timer-hero { text-align: center; padding-top: 1.5rem; }
