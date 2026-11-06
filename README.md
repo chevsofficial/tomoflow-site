@@ -106,3 +106,7 @@ After you approve deployment and the settings above are present:
 4. Only with explicit authorization to replay an event, redeliver that new successful sandbox event in Stripe and confirm no second email. Automated tests already cover this without replaying real events.
 
 Live delivery, email-client rendering, deployed raw-body handling, configured Pro IDs, webhook subscriptions, Supabase provisioning and bounce behavior remain unverified until these deployment checks. No deployment or live API/email test is performed by the automated suite.
+
+### Deployment verification gate
+
+Vercel now runs the mocked Node tests on every build. Production builds also run `scripts/verify-email-store.js`: it checks required email configuration, enforces the current Stripe sandbox key requirement, and verifies the server credential can read the Supabase outbox through the Data API. It reads zero rows and sends no email. Any failed check blocks that deployment. Preview builds skip the credential check because Production secrets are not shared with previews. This gate does not validate Stripe endpoint subscriptions, Resend inbox delivery, or a completed checkout.

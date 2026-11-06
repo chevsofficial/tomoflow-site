@@ -1,7 +1,7 @@
 // Server-only durable outbox. Never expose this credential to the static client.
 async function request(query, options = {}) {
-  const key = process.env.TOMOFLOW_SUPABASE_SECRET_KEY;
-  const base = process.env.TOMOFLOW_SUPABASE_URL?.replace(/\/$/, '');
+  const key = process.env.TOMOFLOW_SUPABASE_SECRET_KEY?.trim();
+  const base = process.env.TOMOFLOW_SUPABASE_URL?.trim().replace(/\/$/, '');
   if (!key || !base) throw new Error('Delivery store not configured');
   const response = await fetch(`${base}/rest/v1/purchase_email_deliveries${query}`, {
     ...options,
