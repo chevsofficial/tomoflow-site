@@ -724,6 +724,8 @@
     const unlockedState = $("proUnlockedState");
     if (freeState) freeState.hidden = !!pro;
     if (unlockedState) unlockedState.hidden = !pro;
+    const restore = $("restorePro");
+    if (restore) restore.hidden = !!pro;
     const status = $("proStatus");
     if (status && !pro) {
       status.textContent = "Unlock every theme and character — one-time, no account.";
