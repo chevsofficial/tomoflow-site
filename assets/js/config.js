@@ -14,7 +14,7 @@
 // the query param alone as proof of payment.
 window.TOMOFLOW_CONFIG = {
   // One-time Pro unlock ($21). Paste sandbox or live Payment Link URL.
-  stripePaymentLink: "REPLACE_WITH_STRIPE_PAYMENT_LINK",
+  stripePaymentLink: "https://buy.stripe.com/test_4gMbIU8dCf94fsVdombV600",
 
   // On-chain Bitcoin tip address (no entitlement; optional support).
   btcAddress: "REPLACE_WITH_BTC_ADDRESS",
