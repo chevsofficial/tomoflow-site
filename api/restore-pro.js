@@ -5,7 +5,8 @@
  * Best-effort Restore Pro for a one-time Stripe purchase (no full accounts).
  * Flow (sandbox → live):
  *  1. Require STRIPE_SECRET_KEY (501 if missing).
- *  2. Look up Stripe Customer + paid Checkout Sessions for TomoFlow Pro.
+ *  2. Look up paid Checkout Sessions that are TomoFlow Pro for that email
+ *     (paginate until exhausted; require product/price/payment_link/metadata match).
  *  3. If RESEND_API_KEY is set → email a magic unlock link (?pro=1&restore=1).
  *  4. Else if ALLOW_CLIENT_RESTORE=1 → return { unlocked: true } for sandbox testing.
  *  5. Else tell the client purchase was found / not found without unlocking.
@@ -15,6 +16,7 @@
  */
 
 const STRIPE_API = "https://api.stripe.com/v1";
+const SESSION_PAGE_SIZE = 100;
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -43,7 +45,6 @@ function isValidEmail(email) {
   if (typeof email !== "string") return false;
   const e = email.trim();
   if (e.length < 3 || e.length > 254) return false;
-  // Pragmatic check — not RFC-perfect.
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 }
 
@@ -64,57 +65,138 @@ async function stripeGet(path, secret) {
   return data;
 }
 
+function proMatchers() {
+  return {
+    productId: (process.env.STRIPE_PRO_PRODUCT_ID || "").trim(),
+    priceId: (process.env.STRIPE_PRO_PRICE_ID || "").trim(),
+    paymentLinkId: (process.env.STRIPE_PRO_PAYMENT_LINK_ID || "").trim(),
+    // Payment Link / product metadata we set when creating the sandbox link.
+    requireAppMeta: true,
+  };
+}
+
+function sessionEmail(session) {
+  return (
+    session.customer_details?.email ||
+    session.customer_email ||
+    ""
+  ).toLowerCase();
+}
+
+function isPaidSession(session) {
+  return (
+    session.payment_status === "paid" ||
+    session.payment_status === "no_payment_required"
+  );
+}
+
+function metadataLooksLikePro(meta) {
+  if (!meta || typeof meta !== "object") return false;
+  const app = String(meta.app || "").toLowerCase();
+  const sku = String(meta.sku || "").toLowerCase();
+  return app === "tomoflow" || sku === "pro" || sku === "tomoflow_pro";
+}
+
+function lineItemsIncludePro(session, matchers) {
+  const items = session.line_items?.data || [];
+  for (const item of items) {
+    const price = item.price || {};
+    const priceId = typeof price === "string" ? price : price.id;
+    const product =
+      typeof price.product === "string" ? price.product : price.product?.id;
+    if (matchers.priceId && priceId === matchers.priceId) return true;
+    if (matchers.productId && product === matchers.productId) return true;
+    if (metadataLooksLikePro(price.metadata) || metadataLooksLikePro(item.metadata)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
- * Best-effort: any paid checkout.session with matching customer_email / customer
- * details, or a customer with a successful payment for this product.
- * Payment Links typically create Checkout Sessions with customer_email set.
+ * Only accept purchases that are clearly TomoFlow Pro — not any paid session
+ * on the same Stripe account.
+ */
+function isTomoFlowProSession(session, matchers) {
+  if (!isPaidSession(session)) return false;
+
+  if (matchers.paymentLinkId) {
+    const pl =
+      typeof session.payment_link === "string"
+        ? session.payment_link
+        : session.payment_link?.id;
+    if (pl && pl === matchers.paymentLinkId) return true;
+  }
+
+  if (metadataLooksLikePro(session.metadata)) return true;
+
+  if (lineItemsIncludePro(session, matchers)) return true;
+
+  // If env IDs are configured, require an ID/metadata match (already checked).
+  // If nothing is configured yet, refuse ambiguous unlocks rather than accepting
+  // any paid email match (Codex P2).
+  return false;
+}
+
+function sessionBelongsToEmail(session, needle, customerIds) {
+  if (sessionEmail(session) === needle) return true;
+  if (session.customer && customerIds.includes(session.customer)) return true;
+  return false;
+}
+
+async function listCompleteSessionsPage(secret, startingAfter) {
+  const params = new URLSearchParams({
+    limit: String(SESSION_PAGE_SIZE),
+    status: "complete",
+  });
+  // Expand line items so we can match product/price without a second round-trip
+  // per session when env IDs are set.
+  params.append("expand[]", "data.line_items");
+  if (startingAfter) params.set("starting_after", startingAfter);
+  return stripeGet(`/checkout/sessions?${params.toString()}`, secret);
+}
+
+/**
+ * Paginate Checkout Sessions until a TomoFlow Pro purchase for this email is
+ * found, or results are exhausted (follows Stripe has_more cursors).
  */
 async function findPaidProPurchase(email, secret) {
-  const encoded = encodeURIComponent(email.toLowerCase());
+  const matchers = proMatchers();
+  if (!matchers.productId && !matchers.priceId && !matchers.paymentLinkId) {
+    // Still allow metadata-only matches (app=tomoflow / sku=pro) which we set
+    // on the sandbox Payment Link + product. No open "any paid session" path.
+  }
 
-  // 1) Customers by email
+  const encoded = encodeURIComponent(email.toLowerCase());
   const customers = await stripeGet(
     `/customers?email=${encoded}&limit=10`,
     secret
   );
   const customerIds = (customers.data || []).map((c) => c.id);
-
-  // 2) Checkout sessions — Stripe list filter is limited; scan recent paid ones
-  //    and match email / customer id. For sandbox volumes this is fine.
-  const sessions = await stripeGet(
-    `/checkout/sessions?limit=100&status=complete`,
-    secret
-  );
-
   const needle = email.toLowerCase();
-  for (const session of sessions.data || []) {
-    if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
-      continue;
-    }
-    const sessionEmail = (
-      session.customer_details?.email ||
-      session.customer_email ||
-      ""
-    ).toLowerCase();
-    if (sessionEmail === needle) {
-      return { kind: "session", id: session.id, customerId: session.customer || null };
-    }
-    if (session.customer && customerIds.includes(session.customer)) {
-      return { kind: "session", id: session.id, customerId: session.customer };
-    }
-  }
 
-  // 3) Fallback: customer exists with any paid PaymentIntent (broader match)
-  for (const customerId of customerIds) {
-    const intents = await stripeGet(
-      `/payment_intents?customer=${encodeURIComponent(customerId)}&limit=20`,
-      secret
-    );
-    const paid = (intents.data || []).find((pi) => pi.status === "succeeded");
-    if (paid) {
-      return { kind: "payment_intent", id: paid.id, customerId };
+  let startingAfter = null;
+  let pages = 0;
+  const maxPages = 50; // safety cap (~5k sessions)
+
+  do {
+    const page = await listCompleteSessionsPage(secret, startingAfter);
+    pages += 1;
+    const data = page.data || [];
+
+    for (const session of data) {
+      if (!sessionBelongsToEmail(session, needle, customerIds)) continue;
+      if (!isTomoFlowProSession(session, matchers)) continue;
+      return {
+        kind: "session",
+        id: session.id,
+        customerId: session.customer || null,
+      };
     }
-  }
+
+    if (!page.has_more || data.length === 0) break;
+    startingAfter = data[data.length - 1].id;
+  } while (pages < maxPages);
 
   return null;
 }
@@ -124,7 +206,10 @@ function siteBaseUrl() {
     return process.env.PUBLIC_SITE_URL.replace(/\/$/, "");
   }
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, "");
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(
+      /\/$/,
+      ""
+    );
   }
   return "https://www.tomoflow.app";
 }
@@ -218,7 +303,6 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // Prefer emailing a magic unlock link when Resend is configured.
   if (process.env.RESEND_API_KEY) {
     try {
       await sendUnlockEmail(email);
@@ -229,7 +313,6 @@ module.exports = async function handler(req, res) {
       });
     } catch (err) {
       console.error("resend failed", err);
-      // Fall through to sandbox client unlock if allowed.
     }
   }
 
