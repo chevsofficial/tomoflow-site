@@ -2,7 +2,7 @@
 
 Simple Pomodoro timer for the browser. No accounts required.
 
-Live experience is `/` — timer, settings, theme picker, optional one-time Pro unlock, optional on-chain Bitcoin tip.
+Live experience is `/` — timer, settings, theme + character pickers, optional one-time Pro unlock, optional on-chain Bitcoin tip.
 
 ## Structure
 
@@ -10,6 +10,7 @@ Live experience is `/` — timer, settings, theme picker, optional one-time Pro 
 - `privacy.html` / `terms.html` / `support.html` — Legal & help
 - `assets/js/config.js` — Stripe Payment Link + BTC address placeholders
 - `assets/js/themes.js` — Theme catalog (add themes here; picker scales)
+- `assets/js/characters.js` — Character (mascot) catalog; Pro art lives in `assets/img/characters/`
 - `assets/js/timer.js` — Timer, localStorage, theme picker, Pro unlock, tip UI
 - `assets/js/nav.js` / `main.js` — Header/footer helpers
 - `assets/css/styles.css` — Shared styles + themes
@@ -19,7 +20,7 @@ Live experience is `/` — timer, settings, theme picker, optional one-time Pro 
 
 ## Monetization
 
-1. **Pro (one-time ~$21)** — Stripe Payment Link. After payment, redirect back to the site so this browser unlocks Pro themes (`tomoflow_pro` in localStorage).
+1. **Pro (one-time ~$21)** — Stripe Payment Link. After payment, redirect back to the site so this browser unlocks Pro themes and characters (`tomoflow_pro` in localStorage).
 2. **Optional Bitcoin tip** — On-chain address + QR + copy, collapsed under Support. Tips do **not** unlock Pro.
 
 ### Stripe Payment Link setup
