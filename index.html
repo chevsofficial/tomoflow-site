@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TomoFlow — Focus Timer & Deep Work Sessions</title>
-  <meta
-    name="description"
-    content="TomoFlow is a simple Pomodoro-style focus timer that helps you plan deep work sessions, track real focus time, and stay in flow."
-  />
+  <title>TomoFlow — Simple Pomodoro Timer</title>
+  <meta name="description" content="TomoFlow is a simple, local-first Pomodoro timer in your browser. Free themes, optional one-time Pro unlock, and Bitcoin tips. No account required." />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-48-transparent.png" />
 </head>
@@ -16,105 +13,96 @@
     <div id="siteHeader"></div>
 
     <main>
-      <section class="container hero">
-        <h1 class="hero-title">Focus deeper. One flow session at a time.</h1>
-        <p class="hero-subtitle">
-          Plan focus sessions, track your real productive minutes, and keep your
-          work in rhythm with a clean Pomodoro-style timer designed for humans, not robots.
-        </p>
-
-        <div class="hero-actions">
-          <a id="btnAppStore" href="#" class="btn btn-primary">Download on the App Store</a>
-          <a id="btnPlayStore" href="#" class="btn btn-secondary">Get it on Google Play</a>
-          <a id="btnWebApp" href="#" class="btn btn-secondary">Open Web App (beta)</a>
+      <section class="container timer-hero">
+        <div class="timer-badge-row">
+          <span class="hero-badge">Local-first · No account</span>
+          <span class="pro-pill" id="proBadge" hidden>Pro</span>
         </div>
 
-        <section class="features">
-          <article class="feature">
-            <div class="feature-icon">✅</div>
-            <h2 class="feature-title">Simple task list</h2>
-            <p class="feature-text">
-              Organize your tasks into To-Do and Done, start a focus session with a single tap, and keep everything in one place.
-            </p>
-          </article>
+        <img id="tomatoImg" class="tomato" src="/assets/img/tomatoes/tomato-happy.png" alt="Focus tomato" width="120" height="120" />
 
-          <article class="feature">
-            <div class="feature-icon">📊</div>
-            <h2 class="feature-title">Real focus analytics</h2>
-            <p class="feature-text">
-              Understand your focus patterns with clean analytics so you can improve your consistency over time.
-            </p>
-          </article>
+        <p class="mode-label" id="modeLabel">Focus</p>
+        <div class="timer-display" id="timerDisplay" aria-live="polite">25:00</div>
+        <p class="round-label" id="roundLabel">Round 1 / 4</p>
 
-          <article class="feature">
-            <div class="feature-icon">🧠</div>
-            <h2 class="feature-title">Stay in the flow</h2>
-            <p class="feature-text">
-              Gentle reminders, clear sessions, and a friendly design help you keep momentum without overwhelming you with options.
-            </p>
-          </article>
+        <div class="timer-actions">
+          <button type="button" class="btn btn-primary" id="btnStart">Start</button>
+          <button type="button" class="btn btn-secondary" id="btnPause" disabled>Pause</button>
+          <button type="button" class="btn btn-secondary" id="btnReset">Reset</button>
+          <button type="button" class="btn btn-secondary" id="btnSkip">Skip</button>
+        </div>
+      </section>
 
-          <article class="feature">
-            <div class="feature-icon">☁️</div>
-            <h2 class="feature-title">Cloud Sync</h2>
-            <p class="feature-text">
-              Sync your tasks, activity types, and focus history across devices.
-            </p>
-          </article>
+      <section class="container panel" id="settings">
+        <h2 class="panel-title">Settings</h2>
+        <p class="panel-sub">Saved in this browser only.</p>
+        <div class="settings-grid">
+          <label class="field">
+            <span>Work (minutes)</span>
+            <input id="cfgWork" type="number" min="1" max="120" step="1" />
+          </label>
+          <label class="field">
+            <span>Short break</span>
+            <input id="cfgBreak" type="number" min="1" max="60" step="1" />
+          </label>
+          <label class="field">
+            <span>Long break</span>
+            <input id="cfgLong" type="number" min="1" max="60" step="1" />
+          </label>
+          <label class="field">
+            <span>Rounds until long break</span>
+            <input id="cfgRounds" type="number" min="1" max="12" step="1" />
+          </label>
+        </div>
+      </section>
 
-          <article class="feature">
-            <div class="feature-icon">🎨</div>
-            <h2 class="feature-title">Premium Themes</h2>
-            <p class="feature-text">
-              Personalize your workspace with premium themes designed for different focus moods and workflows.
-            </p>
-          </article>
+      <section class="container panel" id="themes">
+        <h2 class="panel-title">Themes</h2>
+        <p class="panel-sub">A few free. More with a one-time Pro unlock.</p>
+        <div class="theme-grid" id="themeGrid"></div>
+      </section>
 
-          <article class="feature">
-            <div class="feature-icon">🔒</div>
-            <h2 class="feature-title">Privacy-respectful</h2>
-            <p class="feature-text">
-              No account required. Optional cloud features are available for those who want them. You stay in control of your data.
-            </p>
-          </article>          
+      <section class="container panel" id="pro">
+        <h2 class="panel-title">TomoFlow Pro</h2>
+        <p class="panel-sub" id="proStatus">Free timer · Pro unlocks extra themes.</p>
+        <p class="price-line"><strong id="proPrice">$21</strong> one-time · no subscription · no account</p>
+        <ul class="feature-list">
+          <li>Extra theme pack</li>
+          <li>Same simple timer — just more style</li>
+          <li>Unlock stored locally after Stripe success (<code>?pro=1</code>)</li>
+        </ul>
+        <div class="timer-actions">
+          <button type="button" class="btn btn-primary" id="btnUnlockPro">Unlock Pro</button>
+          <button type="button" class="btn btn-secondary" id="btnDemoPro" title="Dev helper until Stripe is wired">Mark Pro (local)</button>
+        </div>
+      </section>
 
-        </section>
+      <section class="container panel" id="tip">
+        <h2 class="panel-title">Optional Bitcoin tip</h2>
+        <p class="panel-sub">On-chain only. Tips are voluntary and do not unlock Pro.</p>
+        <div class="tip-row">
+          <img id="btcQr" class="btc-qr" width="168" height="168" alt="Bitcoin tip QR code" />
+          <div class="tip-copy">
+            <code class="btc-address" id="btcAddress">REPLACE_WITH_BTC_ADDRESS</code>
+            <button type="button" class="btn btn-secondary" id="btnCopyBtc">Copy address</button>
+          </div>
+        </div>
       </section>
     </main>
+
+    <div class="toast" id="toast" hidden></div>
 
     <footer class="site-footer">
       <div class="container">
         <p>© <span id="year"></span> TomoFlow. All rights reserved.</p>
-        <p class="muted">
-          TomoFlow is a productivity tool, not medical, legal, or financial advice.
-        </p>
+        <p class="muted">A simple focus timer. Not medical, legal, or financial advice.</p>
       </div>
     </footer>
   </div>
 
+  <script src="/assets/js/config.js"></script>
   <script src="/assets/js/nav.js" defer></script>
   <script src="/assets/js/main.js" defer></script>
-
-  <script src="/assets/js/links.js"></script>
-  <script>
-    (function () {
-      const L = window.TOMOFLOW_LINKS || {};
-
-      const a1 = document.getElementById("btnAppStore");
-      const a2 = document.getElementById("btnPlayStore");
-      const a3 = document.getElementById("btnWebApp");
-
-      if (a1 && L.appStore) a1.href = L.appStore;
-      if (a2 && L.playStore) a2.href = L.playStore;
-      if (a3 && L.webApp) a3.href = L.webApp;
-
-      [a1, a2].forEach(a => {
-        if (a && a.href && a.href !== "#") {
-          a.target = "_blank";
-          a.rel = "noopener noreferrer";
-        }
-      });
-    })();
-  </script>
+  <script src="/assets/js/timer.js" defer></script>
 </body>
 </html>
