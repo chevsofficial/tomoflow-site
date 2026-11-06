@@ -253,8 +253,9 @@
       .join("");
     themeList.querySelectorAll("[data-theme-id]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const ok = applyTheme(btn.dataset.themeId);
-        if (ok) setThemePopoverOpen(false);
+        // Always close so a locked-theme nudge to Pro is not covered by the popover.
+        applyTheme(btn.dataset.themeId);
+        setThemePopoverOpen(false);
       });
     });
   };
