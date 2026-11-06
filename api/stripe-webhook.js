@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
     const to = session.customer_details?.email || session.customer_email;
     if (typeof to !== 'string' || to.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error('Purchase recipient missing');
     if (!Number.isSafeInteger(session.amount_total) || session.amount_total <= 0 || !/^[a-z]{3}$/.test(session.currency || '') || typeof session.livemode !== 'boolean') throw new Error('Invalid purchase details');
-    if (!process.env.RESEND_API_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) throw new Error('Delivery not configured');
+    if (!process.env.RESEND_API_KEY || !process.env.TOMOFLOW_SUPABASE_URL || !process.env.TOMOFLOW_SUPABASE_SECRET_KEY) throw new Error('Delivery not configured');
     const key = `tomoflow:confirmation:v1:${session.livemode ? 'live' : 'test'}:${session.id}`;
     // Atomic first writer freezes the entire payload, so concurrent events use identical requests.
     const mail = {

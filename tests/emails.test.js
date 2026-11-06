@@ -12,15 +12,15 @@ const session = overrides => ({ object: 'checkout.session', id: 'cs_test_purchas
 const event = (overrides, type = 'checkout.session.completed') => ({ id: 'evt_one', type, data: { object: session(overrides) } });
 const response = (body, ok = true) => ({ ok, json: async () => body });
 beforeEach(() => {
-  Object.assign(process.env, { STRIPE_WEBHOOK_SECRET: 'whsec_mock', STRIPE_SECRET_KEY: 'sk_test_mock', STRIPE_PRO_PAYMENT_LINK_ID: 'plink_pro', RESEND_API_KEY: 'mock', SUPABASE_URL: 'https://database.example', SUPABASE_SECRET_KEY: 'sb_secret_mock' });
+  Object.assign(process.env, { STRIPE_WEBHOOK_SECRET: 'whsec_mock', STRIPE_SECRET_KEY: 'sk_test_mock', STRIPE_PRO_PAYMENT_LINK_ID: 'plink_pro', RESEND_API_KEY: 'mock', TOMOFLOW_SUPABASE_URL: 'https://database.example', TOMOFLOW_SUPABASE_SECRET_KEY: 'sb_secret_mock' });
   delete process.env.STRIPE_PRO_PRICE_ID;
   delete process.env.STRIPE_PRO_PRODUCT_ID;
   records = new Map(); sends = []; accepted = new Map(); failSend = false; failStore = false; stripeCalls = 0;
   stripePages = [{ data: [], has_more: false }];
   global.fetch = async (url, options) => {
     if (url.startsWith('https://database.example/rest/v1/purchase_email_deliveries')) {
-      assert.equal(options.headers.apikey, process.env.SUPABASE_SECRET_KEY);
-      if (process.env.SUPABASE_SECRET_KEY.startsWith('sb_secret_')) assert.equal(options.headers.Authorization, undefined);
+      assert.equal(options.headers.apikey, process.env.TOMOFLOW_SUPABASE_SECRET_KEY);
+      if (process.env.TOMOFLOW_SUPABASE_SECRET_KEY.startsWith('sb_secret_')) assert.equal(options.headers.Authorization, undefined);
       const parsed = new URL(url);
       if (options.method === 'POST') {
         assert.equal(options.headers.Prefer, 'resolution=ignore-duplicates,return=minimal');
@@ -128,7 +128,7 @@ test('send failure recovers on retry; marker write failure retries identical req
 });
 test('missing recipient and delivery configuration return retryable errors without sending', async () => {
   assert.equal((await call(webhook, event({ customer_details: {} }))).statusCode, 503);
-  delete process.env.SUPABASE_SECRET_KEY;
+  delete process.env.TOMOFLOW_SUPABASE_SECRET_KEY;
   assert.equal((await call(webhook, event())).statusCode, 503);
   assert.equal(sends.length, 0);
 });
@@ -214,7 +214,7 @@ test('Supabase missing update result remains retryable after Resend acceptance',
   assert.equal(accepted.size, 1);
 });
 test('legacy service_role credential uses Bearer auth only on Supabase requests', async () => {
-  process.env.SUPABASE_SECRET_KEY = 'eyJ_mock_legacy';
+  process.env.TOMOFLOW_SUPABASE_SECRET_KEY = 'eyJ_mock_legacy';
   const normalFetch = global.fetch;
   global.fetch = async (url, options) => {
     if (url.startsWith('https://database.example/')) assert.equal(options.headers.Authorization, 'Bearer eyJ_mock_legacy');
