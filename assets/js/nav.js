@@ -6,7 +6,7 @@
   const primaryLinks = [
     { href: "/", label: "Timer" },
     { href: "/#pro", label: "Pro" },
-    { href: "/#tip", label: "Tip" },
+    { href: "/#tip", label: "Support" },
   ];
 
   const legalLinks = [
