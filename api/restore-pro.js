@@ -18,6 +18,8 @@
 const STRIPE_API = "https://api.stripe.com/v1";
 const SESSION_PAGE_SIZE = 100;
 
+const { restoreProEmail } = require("./email-brand");
+
 function json(res, status, body) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -220,6 +222,7 @@ async function sendUnlockEmail(to) {
   if (!apiKey) return false;
 
   const unlockUrl = `${siteBaseUrl()}/?pro=1&restore=1`;
+  const mail = restoreProEmail({ unlockUrl });
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -229,14 +232,9 @@ async function sendUnlockEmail(to) {
     body: JSON.stringify({
       from,
       to: [to],
-      subject: "Restore your TomoFlow Pro unlock",
-      html: `
-        <p>Thanks for supporting TomoFlow.</p>
-        <p><a href="${unlockUrl}">Click here to restore Pro</a> on the browser you're using.</p>
-        <p>This unlock is stored in that browser. Tips never unlock Pro.</p>
-        <p>If you didn't request this, you can ignore this email.</p>
-      `,
-      text: `Restore TomoFlow Pro: ${unlockUrl}\n\nTips never unlock Pro.`,
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
     }),
   });
 
