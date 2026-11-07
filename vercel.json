@@ -29,5 +29,18 @@
     }
   ],
   "buildCommand": "node --test tests/*.test.js && node scripts/build-site.js",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "tomoflow.app"
+        }
+      ],
+      "destination": "https://www.tomoflow.app/:path*",
+      "permanent": true
+    }
+  ]
 }

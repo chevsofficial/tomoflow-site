@@ -65,16 +65,56 @@
   const isPro = () => storageGet(PRO_KEY) === "1";
   const unlockPro = () => storageSet(PRO_KEY, "1");
 
-  const consumeUnlockFromUrl = () => {
+  const showAccessMessage = (message) => {
+    const el = $("proAccessMessage");
+    if (el) { el.textContent = message; el.hidden = false; }
+  };
+
+  const verifyPro = async (payload) => {
+    const response = await fetch("/api/unlock-pro", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Could not verify Pro. Please try Restore Pro.");
+    if (!result.unlocked) { showAccessMessage(result.message || "Payment is still processing."); return false; }
+    unlockPro();
+    updateProUi();
+    showAccessMessage("Pro is unlocked on this browser.");
+    return true;
+  };
+
+  const consumeUnlockFromUrl = async () => {
     const params = new URLSearchParams(window.location.search);
-    const hit = params.get("pro") === "1";
-    if (hit) {
-      unlockPro();
-      params.delete("pro");
-      params.delete("unlocked");
-      params.delete("restore");
-      const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const token = fragment.get("restore");
+    const sessionId = params.get("session_id");
+    const oldLink = params.has("pro") || params.has("unlocked") || params.has("restore");
+    ["session_id", "pro", "unlocked", "restore"].forEach(key => params.delete(key));
+    if (sessionId || token || oldLink) {
+      const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${token ? "" : window.location.hash}`;
+      // Remove bearer tokens immediately. Restore tokens live only in the fragment, never the request URL.
       window.history.replaceState({}, "", clean);
+    }
+    if (token && !isPro()) {
+      const panel = $("restoreLinkState");
+      const button = $("btnConfirmRestore");
+      if (panel) panel.hidden = false;
+      $("pro")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      button?.addEventListener("click", async () => {
+        button.disabled = true;
+        try { if (await verifyPro({ restoreToken: token })) panel.hidden = true; }
+        catch (error) { showAccessMessage(error.message); }
+        finally { button.disabled = false; }
+      });
+      return;
+    }
+    if (sessionId && !isPro()) {
+      $("pro")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showAccessMessage("Checking your purchase…");
+      try { await verifyPro({ sessionId }); }
+      catch (error) { showAccessMessage(error.message); }
+    } else if (oldLink && !isPro()) {
+      showAccessMessage("This old unlock link is no longer valid. Request a new Restore Pro email below.");
     }
   };
 
@@ -601,7 +641,7 @@
           showToast("Checkout isn't configured yet — try again soon");
           return;
         }
-        window.location.href = link;
+        window.location.href = "/api/start-checkout";
       });
     }
     bindRestorePro();
@@ -648,11 +688,7 @@
           return;
         }
 
-        if (data.emailed) {
-          showToast(data.message || "Check your email for a restore link");
-          return;
-        }
-        showToast(data.message || "We found your purchase — check support if Pro didn't unlock");
+        showToast(data.message || "Check your email for a restore link.");
       } catch {
         showToast("Network error — try restore again");
       } finally {
@@ -726,7 +762,6 @@
   resetBtn?.addEventListener("click", resetPhase);
   skipBtn?.addEventListener("click", skip);
 
-  consumeUnlockFromUrl();
   bindSettings();
   bindPro();
   bindTip();
@@ -745,4 +780,5 @@
   remainingMs = durationFor(mode);
   updateChrome();
   updateProUi();
+  consumeUnlockFromUrl();
 })();

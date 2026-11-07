@@ -5,6 +5,9 @@ function buildSite(root = resolve(__dirname, '..')) {
   if (process.env.VERCEL_ENV === 'production' && !process.env.STRIPE_SECRET_KEY?.trim().startsWith('sk_test_')) {
     throw new Error('Production must keep Stripe in sandbox.');
   }
+  if (process.env.VERCEL_ENV === 'production' && (process.env.PRO_TOKEN_SECRET?.trim().length || 0) < 32) {
+    throw new Error('Production Pro access signing key is required.');
+  }
   const output = resolve(root, 'public');
   rmSync(output, { recursive: true, force: true });
   mkdirSync(output);
