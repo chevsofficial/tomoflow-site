@@ -45,7 +45,11 @@
             We store delivery records in Supabase, including the purchase reference, recipient,
             email content, and delivery status, to prevent duplicate confirmations and recover
             from delivery failures. These records are retained for duplicate protection.
-            This does not create a user account or upload your timer settings.
+            We also use a temporary security cookie (up to 24 hours) to tie checkout to the
+            browser that started it. Restore links expire after 30 minutes and can be used once.
+            Keyed hashes of request IP addresses, email addresses, and used Restore links are
+            stored in Supabase for request limits and replay protection; these counters expire
+            and are cleaned as requests arrive. This does not create a user account or upload your timer settings.
           </p>
         </div>
 

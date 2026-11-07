@@ -8,16 +8,17 @@ const { restoreProEmail, purchaseConfirmationEmail } = require('../lib/email-bra
 const originalEnv = { ...process.env };
 const originalFetch = global.fetch;
 let records, sends, accepted, failSend, failStore, stripePages, stripeCalls;
-const session = overrides => ({ object: 'checkout.session', id: 'cs_test_purchase', mode: 'payment', status: 'complete', payment_status: 'paid', payment_link: 'plink_pro', customer_details: { email: 'buyer@example.com' }, amount_total: 1875, currency: 'usd', livemode: false, ...overrides });
+const session = overrides => ({ object: 'checkout.session', id: 'cs_test_purchase', payment_intent: { status: 'succeeded', latest_charge: { paid: true, refunded: false } }, mode: 'payment', status: 'complete', payment_status: 'paid', payment_link: 'plink_pro', customer_details: { email: 'buyer@example.com' }, amount_total: 1875, currency: 'usd', livemode: false, ...overrides });
 const event = (overrides, type = 'checkout.session.completed') => ({ id: 'evt_one', type, data: { object: session(overrides) } });
 const response = (body, ok = true) => ({ ok, json: async () => body });
 beforeEach(() => {
-  Object.assign(process.env, { STRIPE_WEBHOOK_SECRET: 'whsec_mock', STRIPE_SECRET_KEY: 'sk_test_mock', STRIPE_PRO_PAYMENT_LINK_ID: 'plink_pro', RESEND_API_KEY: 'mock', TOMOFLOW_SUPABASE_URL: 'https://database.example', TOMOFLOW_SUPABASE_SECRET_KEY: 'sb_secret_mock' });
+  Object.assign(process.env, { STRIPE_WEBHOOK_SECRET: 'whsec_mock', STRIPE_SECRET_KEY: 'sk_test_mock', STRIPE_PRO_PAYMENT_LINK_ID: 'plink_pro', RESEND_API_KEY: 'mock', PRO_TOKEN_SECRET: 'a'.repeat(64), TOMOFLOW_SUPABASE_URL: 'https://database.example', TOMOFLOW_SUPABASE_SECRET_KEY: 'sb_secret_mock' });
   delete process.env.STRIPE_PRO_PRICE_ID;
   delete process.env.STRIPE_PRO_PRODUCT_ID;
   records = new Map(); sends = []; accepted = new Map(); failSend = false; failStore = false; stripeCalls = 0;
   stripePages = [{ data: [], has_more: false }];
   global.fetch = async (url, options) => {
+    if (url === 'https://database.example/rest/v1/rpc/claim_pro_requests') return response(true);
     if (url.startsWith('https://database.example/rest/v1/purchase_email_deliveries')) {
       assert.equal(options.headers.apikey, process.env.TOMOFLOW_SUPABASE_SECRET_KEY);
       if (process.env.TOMOFLOW_SUPABASE_SECRET_KEY.startsWith('sb_secret_')) assert.equal(options.headers.Authorization, undefined);
@@ -172,9 +173,10 @@ test('Restore endpoint still finds purchase and sends the existing branded unloc
   stripePages = [{ data: [session()], has_more: false }];
   const result = await call(restore, { email: 'buyer@example.com' });
   assert.equal(result.statusCode, 200);
-  assert.equal(result.body.emailed, true);
+  assert.equal(result.body.accepted, true);
   const mail = JSON.parse(sends[0].body);
-  assert.match(mail.html, /pro=1&amp;restore=1/);
+  assert.match(mail.html, /#restore=/);
+  assert.doesNotMatch(mail.html, /pro=1/);
   assert.match(mail.text, /stored in that browser only/);
 });
 
@@ -227,20 +229,20 @@ test('legacy service_role credential uses Bearer auth only on Supabase requests'
 
 test('Restore accepts Vercel-parsed JSON and rejects null or malformed requests', async () => {
   stripePages = [{ data: [session()], has_more: false }];
-  assert.equal((await call(restore, {}, { parsedBody: { email: 'buyer@example.com' } })).body.emailed, true);
+  assert.equal((await call(restore, {}, { parsedBody: { email: 'buyer@example.com' } } )).body.accepted, true);
   for (const body of [null, [], {}, { email: 'invalid' }]) assert.equal((await call(restore, body)).statusCode, 400);
   assert.equal((await call(restore, {}, { raw: '{' })).statusCode, 400);
 });
-test('Restore rejects tip metadata, unpaid, free, subscription and other-email sessions', async () => {
+test('Restore gives the same generic response for tip, unpaid, free, subscription and other-email sessions', async () => {
   for (const overrides of [{ metadata: { app: 'tomoflow', sku: 'pro' }, payment_link: 'plink_tip' }, { payment_status: 'unpaid' }, { payment_status: 'no_payment_required' }, { mode: 'subscription' }, { customer_details: { email: 'someoneelse@example.com' } }]) {
     stripePages = [{ data: [session(overrides)], has_more: false }];
-    assert.equal((await call(restore, { email: 'buyer@example.com' })).statusCode, 404);
+    assert.equal((await call(restore, { email: 'buyer@example.com' })).body.accepted, true);
   }
   assert.equal(sends.length, 0);
 });
 test('Restore paginates by exact checkout email and does not look up customers', async () => {
   stripePages = [{ data: [session({ id: 'cs_other', customer_details: { email: 'other@example.com' } })], has_more: true }, { data: [session()], has_more: false }];
-  assert.equal((await call(restore, { email: 'BUYER@example.com' })).body.emailed, true);
+  assert.equal((await call(restore, { email: 'BUYER@example.com' } )).body.accepted, true);
   assert.equal(stripeCalls, 2);
 });
 test('Restore email failures remain errors even with the obsolete client fallback flag', async () => {
