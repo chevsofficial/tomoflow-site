@@ -1,6 +1,6 @@
 # TomoFlow
 
-A static, local-first Pomodoro timer. No framework, package dependencies, customer accounts, or cloud sync.
+A static, local-first Pomodoro timer. No framework, runtime package dependencies, customer accounts, or cloud sync.
 
 ## Architecture
 
@@ -75,3 +75,13 @@ Restore links contain a signed token in the URL fragment, not the request query,
 The domain redirects to `www.tomoflow.app`, keeping checkout cookies and browser-local Pro state on one origin. The support mailbox is planned for Google Workspace and still requires creation and receive/reply verification; no DNS changes or support messages have been made by this code.
 
 To inspect the existing sandbox Payment Link and verify the production request-protection RPC, run `node scripts/verify-checkout-link.js` with the Production server environment. It makes read-only Stripe calls and records one synthetic request-counter claim in Supabase, without sending email or consuming a Restore link. The explicit `--configure` option updates only that exact existing sandbox Payment Link's completion redirect. It refuses live, inactive or unrelated links. This is an operator action, never part of routine builds.
+
+## Browser regression checks
+
+Development-only Playwright and axe packages are pinned in `package-lock.json`. They are not part of the app runtime. Run `npm ci` and `npm run test:browser`; Linux uses `/usr/bin/chromium` when available, or set `CHROMIUM_PATH`. Otherwise install the test browser with `npx playwright install chromium`.
+
+The suite covers desktop and mobile viewports, narrow layouts, keyboard focus/pickers, all themes, contrast/ARIA checks, timer settings/pause/reset/rounds, once-per-second rendering, simulated tab suspension, local Pro persistence, mocked checkout/Restore flows and centered email HTML. API/provider traffic is intercepted; no purchases, events or emails are sent. It does not certify a physical phone's lock-screen behavior or Gmail/Outlook rendering. Browsers can suspend timers/audio; the timer reconciles its deadline when the page returns.
+
+The header uses a 102px WebP sized for its 34px display (including high-density screens). The original logo master is preserved in `design/logo.svg`, outside static output. The timer has no animation-frame loop; it paints at displayed-second boundaries and pauses background rendering. Phase completion is scheduled independently and reconciled after suspension.
+
+Support/refund copy explains which purchase information to provide and how full refunds affect new access; no refund window or eligibility promise is invented. Google Workspace support mailbox creation/receive-and-reply testing and the planned real sandbox checkout/inbox test remain operator checks.

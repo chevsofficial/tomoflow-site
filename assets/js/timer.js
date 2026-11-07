@@ -100,12 +100,12 @@
       const button = $("btnConfirmRestore");
       if (panel) panel.hidden = false;
       $("pro")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      button?.addEventListener("click", async () => {
+      if (button) button.onclick = async () => {
         button.disabled = true;
         try { if (await verifyPro({ restoreToken: token })) panel.hidden = true; }
         catch (error) { showAccessMessage(error.message); }
         finally { button.disabled = false; }
-      });
+      };
       return;
     }
     if (sessionId && !isPro()) {
@@ -125,10 +125,10 @@
   /** True when the user paused mid-phase (vs idle at full phase duration). */
   let paused = false;
   let completedRounds = 0;
-  let raf = null;
+  let displayTimer = null;
   /** Absolute Date.now() when the current phase should end (while running). */
   let deadlineAt = null;
-  /** setTimeout id for phase completion — fires even when the tab is hidden. */
+  /** Completion is scheduled independently of painting; rechecked after tab suspension. */
   let completeTimer = null;
   /** Bumped whenever a timed phase ends or is cancelled, to ignore stale timeouts. */
   let phaseEpoch = 0;
@@ -191,7 +191,7 @@
     return "breakMin";
   };
 
-  const displayRound = () => (completedRounds % settings.rounds) + 1;
+  const displayRound = () => ((mode === "work" ? completedRounds : completedRounds - 1) % settings.rounds) + 1;
 
   const findTheme = (themeId) => THEMES.find((t) => t.id === themeId) || THEMES[0];
 
@@ -278,16 +278,45 @@
       </button>`;
       })
       .join("");
+    pickerTabStops(themeList);
     themeList.querySelectorAll("[data-theme-id]").forEach((btn) => {
       btn.addEventListener("click", () => {
         // Always close so a locked-theme nudge to Pro is not covered by the popover.
         applyTheme(btn.dataset.themeId);
         setThemePopoverOpen(false);
+        themeTrigger?.focus();
       });
     });
   };
 
+  const pickerTabStops = (list) => {
+    const options = Array.from(list.querySelectorAll('[role="option"]'));
+    const active = options.find(option => option.getAttribute("aria-selected") === "true") || options[0];
+    options.forEach(option => { option.tabIndex = option === active ? 0 : -1; });
+  };
+
+  const bindPickerKeyboard = (list, search) => {
+    search?.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowDown") return;
+      const option = list?.querySelector('[role="option"][tabindex="0"]');
+      if (option) { event.preventDefault(); option.focus(); }
+    });
+    list?.addEventListener("keydown", (event) => {
+      const options = Array.from(list.querySelectorAll('[role="option"]'));
+      if (!options.length) return;
+      const current = options.indexOf(document.activeElement);
+      const target = event.key === "ArrowDown" ? (current + 1) % options.length
+        : event.key === "ArrowUp" ? (current - 1 + options.length) % options.length
+        : event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : null;
+      if (target == null) return;
+      event.preventDefault();
+      options.forEach((option, index) => { option.tabIndex = index === target ? 0 : -1; });
+      options[target].focus();
+    });
+  };
+
   const bindThemePicker = () => {
+    bindPickerKeyboard(themeList, themeSearch);
     themeTrigger?.addEventListener("click", (e) => {
       e.stopPropagation();
       const open = themePopover?.hidden !== false;
@@ -304,6 +333,7 @@
         themeFilter = btn.dataset.filter || "all";
         document.querySelectorAll(".theme-filter").forEach((b) => {
           b.classList.toggle("is-active", b === btn);
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
         });
         renderThemeList();
       });
@@ -398,16 +428,19 @@
       })
       .join("");
 
+    pickerTabStops(characterList);
     characterList.querySelectorAll("[data-character-id]").forEach((btn) => {
       btn.addEventListener("click", () => {
         // Close first so a locked-character nudge to Pro is not covered by the popover.
         setCharacterPopoverOpen(false);
         applyCharacter(btn.dataset.characterId);
+        characterTrigger?.focus();
       });
     });
   };
 
   const bindCharacterPicker = () => {
+    bindPickerKeyboard(characterList, characterSearch);
     characterTrigger?.addEventListener("click", (e) => {
       e.stopPropagation();
       const open = characterPopover?.hidden !== false;
@@ -479,24 +512,20 @@
     completeTimer = setTimeout(() => {
       completeTimer = null;
       if (epoch !== phaseEpoch || !running) return;
-      remainingMs = 0;
-      updateChrome();
+      if (syncRemainingFromDeadline() > 0) { schedulePhaseComplete(); return; }
       completePhase();
     }, ms);
   };
 
-  /** UI loop; completion also scheduled via setTimeout so it fires while the tab is hidden. */
+  // Paint at the next displayed-second boundary, with no background rendering loop.
   const tick = () => {
+    displayTimer = null;
     if (!running) return;
     syncRemainingFromDeadline();
-    if (remainingMs <= 0) {
-      remainingMs = 0;
-      updateChrome();
-      completePhase();
-      return;
-    }
+    if (remainingMs <= 0) { completePhase(); return; }
+    if (document.visibilityState === "hidden") return;
     updateChrome();
-    raf = requestAnimationFrame(tick);
+    displayTimer = setTimeout(tick, Math.max(1, remainingMs % 1000 || 1000));
   };
 
   const start = () => {
@@ -505,9 +534,8 @@
     paused = false;
     deadlineAt = Date.now() + remainingMs;
     schedulePhaseComplete();
-    if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(tick);
-    updateChrome();
+    clearTimeout(displayTimer);
+    tick();
   };
 
   const pause = () => {
@@ -519,8 +547,8 @@
     running = false;
     deadlineAt = null;
     clearCompleteTimer();
-    if (raf) cancelAnimationFrame(raf);
-    raf = null;
+    clearTimeout(displayTimer);
+    displayTimer = null;
     updateChrome();
   };
 
@@ -537,8 +565,8 @@
     paused = false;
     deadlineAt = null;
     clearCompleteTimer();
-    if (raf) cancelAnimationFrame(raf);
-    raf = null;
+    clearTimeout(displayTimer);
+    displayTimer = null;
 
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -611,9 +639,9 @@
         remainingMs = durationFor(mode);
         paused = false;
       }
-      // else: paused + unrelated setting (e.g. break while on work) — keep progress
-
-      updateChrome();
+      // else: paused + unrelated setting — keep progress.
+      if (running) { clearTimeout(displayTimer); tick(); }
+      else updateChrome();
     };
 
     [work, brk, long, rounds].forEach((el) => el?.addEventListener("change", persist));
@@ -746,15 +774,13 @@
     });
   };
 
-  // Keep the UI in sync when returning to a backgrounded tab; completion already
-  // fires via setTimeout even while hidden.
+  // Browser/OS suspension may delay timers. Complete overdue work immediately on return.
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible" || !running) return;
-    syncRemainingFromDeadline();
-    updateChrome();
-    if (remainingMs > 0 && raf == null) {
-      raf = requestAnimationFrame(tick);
-    }
+    clearTimeout(displayTimer);
+    displayTimer = null;
+    if (!running) return;
+    if (syncRemainingFromDeadline() <= 0) completePhase();
+    else if (document.visibilityState === "visible") tick();
   });
 
   startBtn?.addEventListener("click", start);
@@ -781,4 +807,10 @@
   updateChrome();
   updateProUi();
   consumeUnlockFromUrl();
+  window.addEventListener("hashchange", () => {
+    if (new URLSearchParams(window.location.hash.slice(1)).has("restore")) {
+      updateProUi();
+      consumeUnlockFromUrl();
+    }
+  });
 })();

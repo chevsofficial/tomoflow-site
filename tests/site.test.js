@@ -20,9 +20,9 @@ function timer({ saved = {}, query = '', pro = false, failWrites = false, fetchR
     });
     return elements.get(id);
   }
-  const window = { TOMOFLOW_CONFIG: { btcAddress: 'REPLACE_WITH_BTC_ADDRESS' }, location: { search: query, pathname: '/', hash }, history: { replaceState() {} } };
+  const window = { TOMOFLOW_CONFIG: { btcAddress: 'REPLACE_WITH_BTC_ADDRESS' }, location: { search: query, pathname: '/', hash }, history: { replaceState() {} }, addEventListener() {} };
   const document = { getElementById: el, querySelectorAll() { return []; }, addEventListener() {}, body: { dataset: {} }, documentElement: { style: { setProperty() {} } } };
-  const context = vm.createContext({ window, document, URLSearchParams, localStorage: { getItem: key => storage.get(key) || null, setItem(key, value) { if (failWrites) throw Error('quota'); storage.set(key, value); } }, setTimeout: () => 1, clearTimeout() {}, requestAnimationFrame: () => 1, cancelAnimationFrame() {}, navigator: {}, fetch: async () => ({ ok: true, json: async () => fetchResult }) });
+  const context = vm.createContext({ window, document, URLSearchParams, localStorage: { getItem: key => storage.get(key) || null, setItem(key, value) { if (failWrites) throw Error('quota'); storage.set(key, value); } }, setTimeout: () => 1, clearTimeout() {}, navigator: {}, fetch: async () => ({ ok: true, json: async () => fetchResult }) });
   for (const name of ['themes.js', 'characters.js', 'timer.js']) vm.runInContext(fs.readFileSync(path.join(root, 'assets/js', name), 'utf8'), context);
   return { elements, storage, document, el };
 }
@@ -92,6 +92,11 @@ test('opening a restore fragment does not redeem it until the user clicks', asyn
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(app.el('proBadge').hidden, true);
   assert.equal(app.el('restoreLinkState').hidden, false);
-  await app.el('btnConfirmRestore').listeners.click();
+  await app.el('btnConfirmRestore').onclick();
   assert.equal(app.el('proBadge').hidden, false);
+});
+test('header logo stays within a small transfer budget and its master is not a public asset', () => {
+  assert.ok(fs.statSync(path.join(root, 'assets/img/logo.webp')).size < 12 * 1024);
+  assert.ok(fs.existsSync(path.join(root, 'design/logo.svg')));
+  assert.equal(fs.existsSync(path.join(root, 'assets/img/logo.svg')), false);
 });
