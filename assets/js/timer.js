@@ -21,35 +21,36 @@
   const memoryStore = Object.create(null);
 
   const storageGet = (key) => {
+    if (Object.prototype.hasOwnProperty.call(memoryStore, key)) return memoryStore[key];
     try {
       return localStorage.getItem(key);
     } catch {
-      return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+      return null;
     }
   };
 
   const storageSet = (key, value) => {
     try {
       localStorage.setItem(key, value);
+      delete memoryStore[key];
       return;
     } catch {
       memoryStore[key] = String(value);
     }
   };
 
-  const storageRemove = (key) => {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      /* ignore */
-    }
-    delete memoryStore[key];
-  };
-
   const loadState = () => {
     try {
       const raw = storageGet(STORAGE_KEY);
-      return { ...defaults, ...JSON.parse(raw || "{}") };
+      const parsed = JSON.parse(raw || "{}");
+      const saved = parsed && typeof parsed === "object" ? parsed : {};
+      return {
+        ...defaults, ...saved,
+        workMin: clampInt(saved.workMin, 1, 120, defaults.workMin),
+        breakMin: clampInt(saved.breakMin, 1, 60, defaults.breakMin),
+        longBreakMin: clampInt(saved.longBreakMin, 1, 60, defaults.longBreakMin),
+        rounds: clampInt(saved.rounds, 1, 12, defaults.rounds),
+      };
     } catch {
       return { ...defaults };
     }
@@ -57,46 +58,18 @@
 
   const saveState = (partial) => {
     const next = { ...loadState(), ...partial };
-    try {
-      storageSet(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* storageSet already fell back to memory */
-    }
+    storageSet(STORAGE_KEY, JSON.stringify(next));
     return next;
   };
 
-  const isPro = () => {
-    try {
-      return storageGet(PRO_KEY) === "1";
-    } catch {
-      return false;
-    }
-  };
-
-  const setPro = (on) => {
-    try {
-      if (on) storageSet(PRO_KEY, "1");
-      else storageRemove(PRO_KEY);
-    } catch {
-      /* ignore — storage helpers already fall back to memory */
-    }
-  };
-
-  const isDevMode = () => {
-    const params = new URLSearchParams(window.location.search);
-    const v = params.get("dev");
-    return v === "1" || v === "true" || v === "yes";
-  };
+  const isPro = () => storageGet(PRO_KEY) === "1";
+  const unlockPro = () => storageSet(PRO_KEY, "1");
 
   const consumeUnlockFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
-    const keys = cfg.proUnlockParams || ["pro", "unlocked"];
-    const hit = keys.some((k) => {
-      const v = params.get(k);
-      return v === "1" || v === "true" || v === "yes";
-    });
+    const hit = params.get("pro") === "1";
     if (hit) {
-      setPro(true);
+      unlockPro();
       params.delete("pro");
       params.delete("unlocked");
       params.delete("restore");
@@ -606,11 +579,11 @@
     [work, brk, long, rounds].forEach((el) => el?.addEventListener("change", persist));
   };
 
-  const clampInt = (v, min, max, fallback) => {
+  function clampInt(v, min, max, fallback) {
     const n = parseInt(v, 10);
     if (Number.isNaN(n)) return fallback;
     return Math.min(max, Math.max(min, n));
-  };
+  }
 
   const bindPro = () => {
     const price = $("proPrice");
@@ -629,17 +602,6 @@
           return;
         }
         window.location.href = link;
-      });
-    }
-    const demo = $("btnDemoPro");
-    if (demo) {
-      demo.hidden = !isDevMode();
-      demo.addEventListener("click", () => {
-        setPro(true);
-        applyTheme(settings.themeId);
-        applyCharacter(settings.characterId, { silentLock: true });
-        updateProUi();
-        showToast("Pro unlocked on this device");
       });
     }
     bindRestorePro();
@@ -681,23 +643,11 @@
           data = {};
         }
 
-        if (res.status === 501) {
-          showToast(data.error || "Restore isn't configured yet");
-          return;
-        }
         if (!res.ok) {
           showToast(data.error || "Could not restore Pro — try again");
           return;
         }
 
-        if (data.unlocked) {
-          setPro(true);
-          applyTheme(settings.themeId, { silentLock: true });
-          applyCharacter(settings.characterId, { silentLock: true });
-          updateProUi();
-          showToast(data.message || "Pro restored on this browser");
-          return;
-        }
         if (data.emailed) {
           showToast(data.message || "Check your email for a restore link");
           return;
@@ -713,12 +663,7 @@
   };
 
   const updateProUi = () => {
-    let pro = false;
-    try {
-      pro = isPro();
-    } catch {
-      pro = false;
-    }
+    const pro = isPro();
     if (proBadge) proBadge.hidden = !pro;
     const freeState = $("proFreeState");
     const unlockedState = $("proUnlockedState");
@@ -737,13 +682,17 @@
   };
 
   const bindTip = () => {
-    const addr = cfg.btcAddress || "REPLACE_WITH_BTC_ADDRESS";
+    const addr = cfg.btcAddress || "";
+    const configured = addr && !addr.includes("REPLACE");
+    const tip = $("tip");
+    if (tip) tip.hidden = !configured;
+    if (!configured) return;
     const addrEl = $("btcAddress");
     const qr = $("btcQr");
     const copyBtn = $("btnCopyBtc");
     if (addrEl) addrEl.textContent = addr;
     if (qr) {
-      const data = encodeURIComponent(addr.startsWith("REPLACE") ? "bitcoin:placeholder" : `bitcoin:${addr}`);
+      const data = encodeURIComponent(`bitcoin:${addr}`);
       qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${data}`;
       qr.alt = "Bitcoin tip QR code";
     }

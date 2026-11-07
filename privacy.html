@@ -13,7 +13,7 @@
     <main>
       <section class="container">
         <h1 class="page-title">TomoFlow — Privacy Policy</h1>
-        <p class="page-subtitle">Last updated: November 5, 2026</p>
+        <p class="page-subtitle">Last updated: November 6, 2026</p>
 
         <div class="page-section">
           <p>
@@ -31,7 +31,7 @@
             <li>Selected theme and character</li>
             <li>Whether Pro is unlocked on this browser</li>
           </ul>
-          <p>This data does not leave your device unless you clear site data yourself or a payment provider processes a purchase.</p>
+          <p>The web timer does not upload these timer settings or preferences. Clearing site data removes them from your browser.</p>
         </div>
 
         <div class="page-section">
@@ -40,7 +40,12 @@
             TomoFlow Pro is an optional one-time unlock for extra themes and characters, processed by Stripe when you
             choose to purchase. We do not receive or store your full card details. Stripe’s
             privacy policy applies to payment processing. After a successful checkout, Pro
-            is recorded in this browser only.
+            is recorded in this browser only. We use your checkout email address to send
+            purchase confirmations and respond to Restore Pro requests through Resend.
+            We store delivery records in Supabase, including the purchase reference, recipient,
+            email content, and delivery status, to prevent duplicate confirmations and recover
+            from delivery failures. These records are retained for duplicate protection.
+            This does not create a user account or upload your timer settings.
           </p>
         </div>
 
@@ -80,6 +85,5 @@
     <footer class="site-footer"><div class="container"><p>© <span id="year"></span> TomoFlow. All rights reserved.</p></div></footer>
   </div>
   <script src="/assets/js/nav.js" defer></script>
-  <script src="/assets/js/main.js" defer></script>
 </body>
 </html>

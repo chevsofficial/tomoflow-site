@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
 const webhook = require('../api/stripe-webhook');
 const restore = require('../api/restore-pro');
-const { restoreProEmail, purchaseConfirmationEmail } = require('../api/email-brand');
+const { restoreProEmail, purchaseConfirmationEmail } = require('../lib/email-brand');
 const originalEnv = { ...process.env };
 const originalFetch = global.fetch;
 let records, sends, accepted, failSend, failStore, stripePages, stripeCalls;
@@ -49,11 +49,12 @@ beforeEach(() => {
   };
 });
 afterEach(() => { process.env = { ...originalEnv }; global.fetch = originalFetch; });
-async function call(handler, payload, { timestamp = Math.floor(Date.now() / 1000), signature, method = 'POST', raw } = {}) {
+async function call(handler, payload, { timestamp = Math.floor(Date.now() / 1000), signature, method = 'POST', raw, parsedBody } = {}) {
   const bytes = raw ?? JSON.stringify(payload);
   const digest = crypto.createHmac('sha256', 'whsec_mock').update(`${timestamp}.${bytes}`).digest('hex');
   const req = Readable.from([Buffer.from(bytes)]);
   req.method = method;
+  if (parsedBody !== undefined) req.body = parsedBody;
   req.headers = { 'stripe-signature': signature ?? `t=${timestamp},v1=${digest}` };
   const res = { setHeader() {}, end(body) { this.body = JSON.parse(body); } };
   await handler(req, res);
@@ -168,7 +169,7 @@ test('every visible text cell and paragraph is centered in both templates', () =
   }
 });
 test('Restore endpoint still finds purchase and sends the existing branded unlock link', async () => {
-  stripePages = [{ data: [] }, { data: [session()], has_more: false }];
+  stripePages = [{ data: [session()], has_more: false }];
   const result = await call(restore, { email: 'buyer@example.com' });
   assert.equal(result.statusCode, 200);
   assert.equal(result.body.emailed, true);
@@ -178,6 +179,7 @@ test('Restore endpoint still finds purchase and sends the existing branded unloc
 });
 
 test('Stripe lookup and delivery store outages remain retryable', async () => {
+  process.env.STRIPE_PRO_PRICE_ID = 'price_pro';
   global.fetch = async () => { throw new Error('mock outage'); };
   assert.equal((await call(webhook, event({ payment_link: null }))).statusCode, 503);
   assert.equal((await call(webhook, event())).statusCode, 503);
@@ -221,4 +223,33 @@ test('legacy service_role credential uses Bearer auth only on Supabase requests'
     return normalFetch(url, options);
   };
   assert.equal((await call(webhook, event())).statusCode, 200);
+});
+
+test('Restore accepts Vercel-parsed JSON and rejects null or malformed requests', async () => {
+  stripePages = [{ data: [session()], has_more: false }];
+  assert.equal((await call(restore, {}, { parsedBody: { email: 'buyer@example.com' } })).body.emailed, true);
+  for (const body of [null, [], {}, { email: 'invalid' }]) assert.equal((await call(restore, body)).statusCode, 400);
+  assert.equal((await call(restore, {}, { raw: '{' })).statusCode, 400);
+});
+test('Restore rejects tip metadata, unpaid, free, subscription and other-email sessions', async () => {
+  for (const overrides of [{ metadata: { app: 'tomoflow', sku: 'pro' }, payment_link: 'plink_tip' }, { payment_status: 'unpaid' }, { payment_status: 'no_payment_required' }, { mode: 'subscription' }, { customer_details: { email: 'someoneelse@example.com' } }]) {
+    stripePages = [{ data: [session(overrides)], has_more: false }];
+    assert.equal((await call(restore, { email: 'buyer@example.com' })).statusCode, 404);
+  }
+  assert.equal(sends.length, 0);
+});
+test('Restore paginates by exact checkout email and does not look up customers', async () => {
+  stripePages = [{ data: [session({ id: 'cs_other', customer_details: { email: 'other@example.com' } })], has_more: true }, { data: [session()], has_more: false }];
+  assert.equal((await call(restore, { email: 'BUYER@example.com' })).body.emailed, true);
+  assert.equal(stripeCalls, 2);
+});
+test('Restore email failures remain errors even with the obsolete client fallback flag', async () => {
+  process.env.ALLOW_CLIENT_RESTORE = '1';
+  failSend = true;
+  stripePages = [{ data: [session()], has_more: false }];
+  const result = await call(restore, { email: 'buyer@example.com' });
+  assert.equal(result.statusCode, 503);
+  assert.equal(result.body.unlocked, undefined);
+  delete process.env.RESEND_API_KEY;
+  assert.equal((await call(restore, { email: 'buyer@example.com' })).statusCode, 503);
 });

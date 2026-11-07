@@ -1,112 +1,67 @@
-# TomoFlow Website
+# TomoFlow
 
-Simple Pomodoro timer for the browser. No accounts required.
+A static, local-first Pomodoro timer. No framework, package dependencies, customer accounts, or cloud sync.
 
-Live experience is `/` — timer, settings, theme + character pickers, optional one-time Pro unlock, optional on-chain Bitcoin tip.
+## Architecture
 
-## Structure
+- `index.html`, `assets/js/timer.js`, `assets/css/styles.css`: timer, settings and Pro UI.
+- `assets/js/themes.js` and `characters.js`: catalogs; each entry declares whether it is free.
+- `assets/js/config.js`: public sandbox Payment Link, displayed price, optional Bitcoin address. No secrets.
+- `support.html`, `terms.html`, `privacy.html`: static information pages. `nav.js` supplies shared navigation, footer links and year.
+- `api/restore-pro.js`: checks Stripe for a paid Pro checkout matching the entered checkout email, then sends a Restore email.
+- `api/stripe-webhook.js`: verifies the raw Stripe signature and sends purchase confirmations after successful paid Pro checkout.
+- `lib/stripe.js`: shared exact Pro purchase matching for both endpoints. Generic app/sku metadata cannot unlock Pro.
+- `lib/email-brand.js`: shared centered HTML and plain-text email templates.
+- `lib/delivery-store.js`: Supabase delivery tracking. It is not a customer-account or timer database.
+- `scripts/build-site.js`: copies only public HTML and assets into `public/`. Vercel bundles the two API routes separately; helpers, scripts, tests, migrations and docs are not static website files.
 
-- `index.html` — Timer app (main experience)
-- `privacy.html` / `terms.html` / `support.html` — Legal & help
-- `assets/js/config.js` — Stripe Payment Link + BTC address placeholders (client only)
-- `assets/js/themes.js` — Theme catalog (add themes here; picker scales)
-- `assets/js/characters.js` — Character (mascot) catalog; Pro art lives in `assets/img/characters/`
-- `assets/js/timer.js` — Timer, localStorage, theme/character pickers, Pro unlock, Restore Pro, tip UI
-- `assets/js/nav.js` / `main.js` — Header/footer helpers
-- `assets/css/styles.css` — Shared styles + themes
-- `assets/img/` — Logo, favicon, tomato + character art
-- `api/restore-pro.js` — `POST /api/restore-pro` (Stripe lookup + Resend magic link / sandbox unlock)
-- `api/stripe-webhook.js` — Signature-verified Pro purchase confirmations via Resend
-- `vercel.json` — Thin rewrites for legal pages (`/api/*` is served by Vercel Functions)
-- `.env.example` — Server env vars for Stripe / Resend / restore behavior
+Timer settings, selected theme/character and `tomoflow_pro` stay in browser storage, with an in-memory fallback if writes are blocked. Clearing browser storage removes that local state. There is no timer data in Supabase. Unconfigured Bitcoin tips are hidden and make no QR-service request.
 
-## Monetization
+## Stripe sandbox and email configuration
 
-1. **Pro (one-time ~$21)** — Stripe Payment Link. After payment, redirect back with `?pro=1` so this browser unlocks Pro themes and characters (`tomoflow_pro` in localStorage). That query param is a **client hint** only — production restore verifies via Stripe + email (see below).
-2. **Restore Pro** — Buyer enters the email on their Stripe receipt; `/api/restore-pro` checks Stripe for a paid purchase, then emails a magic unlock link via Resend (or, in sandbox only, unlocks the client when `ALLOW_CLIENT_RESTORE=1`).
-3. **Optional Bitcoin tip** — On-chain address + QR + copy, collapsed under Support. Tips do **not** unlock Pro.
+Use the existing Vercel Marketplace Stripe **sandbox** resource. Do not switch to live keys or a live Payment Link.
 
-### Stripe Payment Link setup (sandbox → live)
+1. The public test Payment Link lives in `assets/js/config.js`; its current after-payment redirect is `https://www.tomoflow.app/?pro=1`.
+2. Set the server variables from `.env.example` in Vercel. Use the sandbox `STRIPE_SECRET_KEY` and at least one exact Pro Payment Link, price or product ID. Both Restore and confirmations require a complete, one-time, strictly paid session with that match.
+3. The existing sandbox endpoint is `https://www.tomoflow.app/api/stripe-webhook`. Subscribe it to `checkout.session.completed` and `checkout.session.async_payment_succeeded`; retain its matching `STRIPE_WEBHOOK_SECRET`. Delayed unpaid checkouts wait for success. Failed and unrelated events are ignored.
+4. Resend uses the verified `RESEND_API_KEY` and `RESEND_FROM=TomoFlow <noreply@tomoflow.app>`. `PUBLIC_SITE_URL=https://www.tomoflow.app` is the Restore destination. Restore reports send/provider failures as retryable errors; there is no client-only fallback.
+5. Apply the versioned migrations in `supabase/migrations/`. Configure server-only `TOMOFLOW_SUPABASE_URL` and `TOMOFLOW_SUPABASE_SECRET_KEY` for the new TomoFlow project. Never use a publishable key or expose the secret in client config. Older, separately configured Supabase variables are not used by these routes.
 
-1. Attach **Stripe** to this Vercel project (Marketplace / Integrations). Use the **sandbox / test mode** resource while wiring.
-2. In Stripe Dashboard (test mode) → Payment Links → create a **one-time** product for **$21**.
-3. Set **After payment → Redirect to** `https://YOUR_DOMAIN/?pro=1` (or the Vercel preview URL while testing).
-4. Paste the link into `assets/js/config.js` as `stripePaymentLink`.
-5. Set Vercel env from `.env.example`: at least `STRIPE_SECRET_KEY`. For restore emails also set `RESEND_API_KEY` + `RESEND_FROM` + `PUBLIC_SITE_URL`. For sandbox without Resend, set `ALLOW_CLIENT_RESTORE=1` on Preview only.
-6. For confirmations, configure the sandbox webhook and durable Supabase delivery store as described below.
-7. **Go live:** create a **live** Payment Link, replace `stripePaymentLink`, swap Vercel env to live `STRIPE_SECRET_KEY` / webhook secret, set `ALLOW_CLIENT_RESTORE=0`, redeploy.
+The delivery table enables RLS, grants no browser/user access, and gives the service role SELECT, INSERT and UPDATE of the sent marker only. Records include recipient/email content and must be retained for duplicate protection. The privacy page describes this processing. No extra Supabase Auth or Realtime setup is needed.
 
-Local Pro testing without Stripe: open the site with `?dev=1` to reveal **Mark Pro (local)**.
+## Email duplicate protection
 
-### Unlock / Restore behavior
+An atomic Postgres insert with a unique Checkout Session key freezes one email payload and first-attempt timestamp. All success event types/retries use the same Resend idempotency key. After Resend accepts the email, its ID is saved; subsequent events acknowledge without sending.
 
-| Situation | Unlock Pro button | Restore Pro |
-| --- | --- | --- |
-| Payment Link still `REPLACE_WITH_…` | Toast: checkout isn't configured | — |
-| Payment Link set | Redirects to Stripe Checkout | — |
-| Return with `?pro=1` | Client stores Pro (hint) | — |
-| `STRIPE_SECRET_KEY` missing | — | `501` + helpful message |
-| Purchase found + Resend configured | — | Emails `/?pro=1&restore=1` |
-| Purchase found + `ALLOW_CLIENT_RESTORE=1` | — | `{ unlocked: true }` → client stores Pro |
-| Purchase found, no Resend / allow flag | — | Success message; no auto-unlock (contact support) |
-| No matching paid purchase | — | `404` |
+Stripe, Supabase and Resend errors, missing recipients and missing configuration return 503 for retry. Resend acceptance followed by a failed database update is recovered with the same key. Acceptance does not guarantee inbox delivery.
 
-### Bitcoin tip address
+Resend retains idempotency keys for 24 hours. Pending attempts older than 23 hours fail closed and need operator reconciliation against Resend logs, rather than risking another email after key expiry. Do not delete/reset ambiguous records or expire delivery records. Database loss removes durable duplicate protection. Historic purchases are not backfilled. If switching from an active older store, migrate its existing records first.
 
-1. Generate or choose an on-chain receive address.
-2. Replace `REPLACE_WITH_BTC_ADDRESS` in `assets/js/config.js` (`btcAddress`).
-3. QR codes are generated client-side via a public QR image API from that address.
+Confirmations use Stripe's actual total/currency and a purchase reference, escape dynamic HTML, and include plain text. Test purchases are explicitly marked `[TEST]` and state that no real money was charged. Their CTA opens the normal app; it does not create a new unlock mechanism.
 
-## Local preview
+## Build and verification
 
-Static UI:
-
-```bash
-npx --yes serve .
-# or: python3 -m http.server 8080
+```sh
+node --test tests/*.test.js
+node scripts/build-site.js
+python3 -m http.server 8080 --directory public
 ```
 
-API routes (`/api/*`) need `vercel dev` (with env from `.env.example`) to exercise Restore Pro against Stripe test mode.
+Vercel runs the same tests and static build. The Production build retains a local sandbox-key guard, but makes no external API calls: a provider outage cannot block an unrelated site fix. API routes require Vercel Functions (or `vercel dev`), not the static Python server.
 
-Open `http://localhost:3000` (or the port shown).
+Optional read-only operator checks, run in an environment with the server variables and `VERCEL_ENV=production`:
 
-Mobile apps (if any) live in other repositories; this repo is the web timer.
+```sh
+node scripts/verify-email-store.js
+node scripts/verify-stripe-webhook.js
+```
 
-## Purchase confirmations (sandbox remains enabled)
+These inspect Supabase Data API access and required sandbox webhook subscriptions. They send no emails, replay no events and modify no provider settings. `supabase/tests/purchase_email_deliveries.sql` checks real grants/uniqueness/marker writes in a rolled-back synthetic transaction. Automated Node tests mock all provider calls.
 
-The previous webhook was a logging stub and never sent purchase mail. It now verifies the exact raw request body with HMAC-SHA256, constant-time comparison, and a five-minute timestamp tolerance. Missing signing configuration returns 503; invalid signatures return 400. There is no shape-only acceptance.
+After deployment, complete a **new sandbox Pro checkout**. Confirm one centered `[TEST]` email with the actual test total and no-real-charge label. Check browser-local access. In another browser, request Restore using the checkout email and follow the centered Restore email. Test delayed-payment success if enabled and verify failed/tip-only transactions send no confirmation. Actual inbox delivery and rendering in email clients require these checks; do not replay purchases or send test emails without authorization.
 
-Before an approved deployment:
+## Remaining work before a paid launch
 
-1. Keep the existing Vercel Marketplace Stripe **sandbox** key and test Payment Link. Set `STRIPE_WEBHOOK_SECRET` to the signing secret for the existing sandbox endpoint `https://www.tomoflow.app/api/stripe-webhook`.
-2. Subscribe that endpoint to **both** `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Delayed methods are acknowledged while unpaid and confirmed only on successful payment. Failed/unrelated events are ignored.
-3. Set at least one exact sandbox Pro identifier: `STRIPE_PRO_PAYMENT_LINK_ID`, `STRIPE_PRO_PRICE_ID`, or `STRIPE_PRO_PRODUCT_ID`. Confirm it identifies Pro, never a tip. Matching a Payment Link avoids a Stripe read; price/product matching paginates the session line items. Generic `app`/`sku` metadata is deliberately insufficient for confirmations. Existing Restore matching behavior is unchanged.
-4. Reuse the verified `RESEND_API_KEY` and `RESEND_FROM=TomoFlow <noreply@tomoflow.app>` settings. Keep `PUBLIC_SITE_URL=https://www.tomoflow.app` for Restore. Confirmation links use the shared canonical branding URL.
-5. Apply `supabase/migrations/20261106230000_purchase_email_deliveries.sql` to the selected Supabase project. Set server-only `TOMOFLOW_SUPABASE_URL` and `TOMOFLOW_SUPABASE_SECRET_KEY` in the Vercel environment serving the endpoint (modern `sb_secret_` key or legacy `service_role` JWT; never the publishable/anon key). The table has RLS enabled, no browser/user grants, and service-role access limited to reading/inserting records and updating only the sent marker. Records contain recipient addresses and rendered emails; retain them for duplicate protection. No customer accounts are introduced. If replacing an active Redis outbox, migrate its pending/sent records preserving keys, payloads and timestamps before switching traffic; an empty Supabase table cannot deduplicate historic Redis deliveries.
+The current checkout/Restore URL `?pro=1` still unlocks the local UI without verifying that link. It is an existing sandbox shortcut, not proof of payment. Replace it with server-verified checkout and signed, expiring Restore links before a paid launch. Local cosmetic assets/state remain editable by a technically capable browser user; this architecture does not provide DRM.
 
-Only complete, one-time, strictly `paid` Pro sessions with a positive actual transaction total and valid recipient are sent mail. Free/unpaid purchases and tip-only transactions are excluded. Sandbox subjects carry `[TEST]`, and HTML/plain text explicitly say no real money was charged. The email shows Stripe's actual total and currency (including zero/three decimal currencies), a session reference, and browser-local Pro/Restore instructions. Its ordinary app link grants no new entitlement. No live-payment configuration is introduced.
-
-### Duplicate prevention and failures
-
-A Postgres primary key and atomic `INSERT ... ON CONFLICT DO NOTHING` create one permanent outbox record per Checkout Session and test/live mode, freezing the complete Resend payload and first-attempt timestamp. Resend receives the same session-based idempotency key and identical payload on concurrent deliveries, different success event types, and retries. After acceptance, Supabase stores the returned email ID; subsequent webhooks acknowledge without sending. This is session-based, not event-ID-based.
-
-Stripe/Supabase/Resend errors, missing recipients, and missing required configuration return **503** so Stripe can retry. A send accepted by Resend followed by a Supabase write failure is recovered with the same Resend idempotency key. Acceptance does not guarantee inbox delivery; bounces and mailbox filtering still require Resend diagnostics.
-
-**Limits:** Resend idempotency expires after 24 hours. Pending records older than 23 hours return 503 without another send, preserving duplicate protection at the cost of automatic recovery for prolonged outages. Monitor non-2xx webhook deliveries and reconcile these promptly. Check the stored key against Resend delivery logs before marking a record sent with the confirmed email ID. Never delete/reset an ambiguous record or resend it blindly; an intentional resend requires operator review. Durable protection depends on retaining Supabase records (including across deployments); database loss or manual deletion removes it. Existing historic purchases are not backfilled automatically.
-
-### Verification and testing after approved deployment
-
-Run `node --test tests/*.test.js` (Node 20+). To check actual database constraints/grants without retaining data, run `supabase/tests/purchase_email_deliveries.sql` against the project; it uses synthetic values and rolls back its transaction. All automated tests mock Stripe, Supabase and Resend; no email or purchase event is sent. Tests cover signature/replay validation, purchase filtering, delayed success, missing recipient/configuration, concurrent duplicates, provider/store failure recovery, expired pending records, rendering/alignment and the existing Restore endpoint.
-
-After you approve deployment and the settings above are present:
-
-1. Complete a **new sandbox Pro checkout** with an inbox you control. Confirm the webhook succeeds and exactly one branded `[TEST]` confirmation arrives with the actual test amount/currency and no-real-charge label. Check its plain-text version and centered body, footer note and links in your email client.
-2. Confirm the checkout return still unlocks Pro in that browser. In a separate browser without Pro, choose **Restore Pro**, enter the checkout email, and follow the existing restore email there. Check all its visible text is centered and that access remains browser-local.
-3. If delayed methods are enabled, complete a new sandbox delayed-payment scenario: no confirmation while unpaid; one after success. Verify failure and tip-only sandbox transactions do not produce confirmations.
-4. Only with explicit authorization to replay an event, redeliver that new successful sandbox event in Stripe and confirm no second email. Automated tests already cover this without replaying real events.
-
-Live delivery, email-client rendering, deployed raw-body handling, configured Pro IDs, webhook subscriptions, Supabase provisioning and bounce behavior remain unverified until these deployment checks. No deployment or live API/email test is performed by the automated suite.
-
-### Deployment verification gate
-
-Vercel now runs the mocked Node tests on every build. Production builds also run `scripts/verify-email-store.js`: it checks required email configuration, enforces the current Stripe sandbox key requirement, and verifies the server credential can read the Supabase outbox through the Data API. It reads zero rows and sends no email. Any failed check blocks that deployment. Preview builds skip the credential check because Production secrets are not shared with previews. This gate does not validate Stripe endpoint subscriptions, Resend inbox delivery, or a completed checkout.
+Restore also needs durable request throttling before public launch, and the support mailbox needs delivery/reply verification. These are separate from email confirmation duplicate protection. No customer-account system is needed to address them.

@@ -21,7 +21,4 @@ window.TOMOFLOW_CONFIG = {
 
   // Display price (matches your Stripe Payment Link amount).
   proPriceLabel: "$21",
-
-  // Query params that unlock Pro after Stripe redirects back (or Restore email).
-  proUnlockParams: ["pro", "unlocked"],
 };
