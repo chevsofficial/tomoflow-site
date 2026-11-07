@@ -25,6 +25,18 @@ test('public pages fit the viewport and have no serious accessibility violations
     expect(scan.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => n.target) }))).toEqual([]);
   }
 });
+test('Bitcoin support stays visible without exposing a placeholder payment address', async ({ page }) => {
+  const qrRequests = [];
+  page.on('request', request => { if (request.url().includes('qrserver.com')) qrRequests.push(request.url()); });
+  await page.goto('/');
+  await expect(page.locator('#tip')).toBeVisible();
+  await page.locator('#tip summary').click();
+  await expect(page.locator('#btcUnavailable')).toBeVisible();
+  await expect(page.locator('#btcPayment')).toBeHidden();
+  await expect(page.locator('#btcAddress')).toHaveText('');
+  expect(await page.locator('#btcQr').getAttribute('src')).toBeNull();
+  expect(qrRequests).toEqual([]);
+});
 test('timer paints once per second and preserves pause/settings progress', async ({ page }) => {
   await freeze(page); await page.goto('/');
   await page.locator('#cfgWork').fill('1'); await page.locator('#cfgWork').press('Tab');

@@ -748,8 +748,8 @@
   const bindTip = () => {
     const addr = cfg.btcAddress || "";
     const configured = addr && !addr.includes("REPLACE");
-    const tip = $("tip");
-    if (tip) tip.hidden = !configured;
+    $("btcPayment").hidden = !configured;
+    $("btcUnavailable").hidden = !!configured;
     if (!configured) return;
     const addrEl = $("btcAddress");
     const qr = $("btcQr");
@@ -761,10 +761,6 @@
       qr.alt = "Bitcoin tip QR code";
     }
     copyBtn?.addEventListener("click", async () => {
-      if (addr.includes("REPLACE_WITH")) {
-        showToast("Tip address isn't configured yet");
-        return;
-      }
       try {
         await navigator.clipboard.writeText(addr);
         showToast("Bitcoin address copied");
