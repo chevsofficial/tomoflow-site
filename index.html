@@ -21,7 +21,7 @@
         <img id="tomatoImg" class="tomato" src="/assets/img/tomatoes/tomato-happy.png" alt="Tomo, focus" width="120" height="120" />
 
         <p class="mode-label" id="modeLabel">Focus</p>
-        <div class="timer-display" id="timerDisplay" aria-live="polite">25:00</div>
+        <div class="timer-display" id="timerDisplay" role="timer" aria-label="Time remaining" aria-live="off">25:00</div>
         <p class="round-label" id="roundLabel">Round 1 / 4</p>
 
         <div class="timer-actions">
@@ -98,9 +98,9 @@
                     />
                   </label>
                   <div class="theme-filters" role="group" aria-label="Filter themes">
-                    <button type="button" class="theme-filter is-active" data-filter="all">All</button>
-                    <button type="button" class="theme-filter" data-filter="free">Free</button>
-                    <button type="button" class="theme-filter" data-filter="pro">Pro</button>
+                    <button type="button" class="theme-filter is-active" data-filter="all" aria-pressed="true">All</button>
+                    <button type="button" class="theme-filter" data-filter="free" aria-pressed="false">Free</button>
+                    <button type="button" class="theme-filter" data-filter="pro" aria-pressed="false">Pro</button>
                   </div>
                 </div>
                 <div class="theme-list" id="themeList" role="listbox" aria-label="Themes"></div>
@@ -222,7 +222,7 @@
       </section>
     </main>
 
-    <div class="toast" id="toast" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
     <footer class="site-footer">
       <div class="container">

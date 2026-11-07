@@ -8,7 +8,7 @@
   --surfaceAlt: #2A2E35;
   --textPrimary: #FFFFFF;
   --textSecondary: #A0A5B1;
-  --textMuted: #7A7F8B;
+  --textMuted: #A0A5B1;
   --border: rgba(255, 255, 255, 0.08);
   --shadow: rgba(0, 0, 0, 0.65);
 }
@@ -98,7 +98,7 @@ main { flex: 1; padding: 1.25rem 0 2.5rem; }
   font-size: 0.95rem; font-weight: 800; cursor: pointer; text-decoration: none; user-select: none;
 }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary { background: var(--primary); color: #121417; }
 .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
 .btn-secondary { background: var(--surfaceAlt); border-color: var(--border); color: var(--textPrimary); }
 .btn-secondary:hover:not(:disabled) { filter: brightness(1.06); }
@@ -200,7 +200,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 }
 .theme-option:hover { border-color: var(--border); filter: brightness(1.04); }
 .theme-option.is-active { outline: 2px solid var(--primary); outline-offset: 0; }
-.theme-option.is-locked { opacity: 0.78; }
 .theme-option-swatch {
   width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
@@ -328,3 +327,5 @@ a:hover { filter: brightness(1.1); }
   font-weight: 600;
 }
 .restore-pro-form .btn { flex: 0 0 auto; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

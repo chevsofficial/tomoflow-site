@@ -1,0 +1,13 @@
+{
+  "name": "tomoflow-site",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:browser": "playwright test",
+    "build": "node scripts/build-site.js"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.65.0"
+  }
+}
