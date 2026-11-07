@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
-const { purchaseConfirmationEmail } = require('./email-brand');
-const deliveryStore = require('./delivery-store');
+const { purchaseConfirmationEmail } = require('../lib/email-brand');
+const deliveryStore = require('../lib/delivery-store');
+const { isPaidProSession } = require('../lib/stripe');
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -15,33 +16,6 @@ function verified(raw, header, secret) {
   if (!/^\d+$/.test(timestamp || '') || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
   const expected = crypto.createHmac('sha256', secret).update(`${timestamp}.`).update(raw).digest();
   return pieces.some(([k, v]) => k === 'v1' && /^[a-f0-9]{64}$/i.test(v || '') && crypto.timingSafeEqual(expected, Buffer.from(v, 'hex')));
-}
-async function stripe(path) {
-  const response = await fetch(`https://api.stripe.com/v1${path}`, {
-    headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Stripe-Version': '2024-11-20.acacia' },
-  });
-  if (!response.ok) throw new Error('Stripe request failed');
-  return response.json();
-}
-// Deliberately require configured exact identifiers; app=tomoflow alone also describes tips.
-async function isPro(session) {
-  const id = value => typeof value === 'string' ? value : value?.id;
-  const link = process.env.STRIPE_PRO_PAYMENT_LINK_ID;
-  if (link && id(session.payment_link) === link) return true;
-  let after;
-  do {
-    const params = new URLSearchParams({ limit: '100' });
-    if (after) params.set('starting_after', after);
-    const page = await stripe(`/checkout/sessions/${encodeURIComponent(session.id)}/line_items?${params}`);
-    for (const item of page.data || []) {
-      if ((process.env.STRIPE_PRO_PRICE_ID && id(item.price) === process.env.STRIPE_PRO_PRICE_ID) ||
-          (process.env.STRIPE_PRO_PRODUCT_ID && id(item.price?.product) === process.env.STRIPE_PRO_PRODUCT_ID)) return true;
-    }
-    if (!page.has_more) return false;
-    after = page.data?.at(-1)?.id;
-    if (!after) throw new Error('Invalid Stripe pagination');
-  } while (after);
-  return false;
 }
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
@@ -61,7 +35,7 @@ module.exports = async function handler(req, res) {
   if (session.mode !== 'payment' || session.status !== 'complete' || session.payment_status !== 'paid') return json(res, 200, { ignored: true });
   try {
     if (!process.env.STRIPE_SECRET_KEY || !['STRIPE_PRO_PAYMENT_LINK_ID', 'STRIPE_PRO_PRICE_ID', 'STRIPE_PRO_PRODUCT_ID'].some(k => process.env[k])) throw new Error('Purchase verification not configured');
-    if (!await isPro(session)) return json(res, 200, { ignored: true });
+    if (!await isPaidProSession(session)) return json(res, 200, { ignored: true });
     const to = session.customer_details?.email || session.customer_email;
     if (typeof to !== 'string' || to.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error('Purchase recipient missing');
     if (!Number.isSafeInteger(session.amount_total) || session.amount_total <= 0 || !/^[a-z]{3}$/.test(session.currency || '') || typeof session.livemode !== 'boolean') throw new Error('Invalid purchase details');

@@ -1,12 +1,15 @@
 // assets/js/nav.js — thin header/footer, no accounts
 (() => {
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
   const headerMount = document.getElementById("siteHeader");
   if (!headerMount) return;
 
   const primaryLinks = [
     { href: "/", label: "Timer" },
     { href: "/#pro", label: "Pro" },
-    { href: "/#tip", label: "Support" },
+    { href: "/support", label: "Support" },
   ];
 
   const legalLinks = [

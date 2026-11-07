@@ -28,6 +28,6 @@
       ]
     }
   ],
-  "buildCommand": "node --test tests/*.test.js && node scripts/verify-email-store.js && node scripts/verify-stripe-webhook.js",
-  "outputDirectory": "."
+  "buildCommand": "node --test tests/*.test.js && node scripts/build-site.js",
+  "outputDirectory": "public"
 }
