@@ -202,7 +202,7 @@
         </div>
       </section>
 
-      <section class="container panel tip-panel" id="tip" hidden>
+      <section class="container panel tip-panel" id="tip">
         <details class="tip-disclosure" id="tipDisclosure">
           <summary class="tip-summary">
             <span class="tip-summary-title">Support TomoFlow</span>
@@ -210,10 +210,11 @@
           </summary>
           <div class="tip-body">
             <p class="panel-sub tip-body-note">On-chain only. Tips are voluntary and never unlock Pro.</p>
-            <div class="tip-row">
+            <p class="panel-sub" id="btcUnavailable">Bitcoin tips are not available yet. Thanks for supporting TomoFlow.</p>
+            <div class="tip-row" id="btcPayment" hidden>
               <img id="btcQr" class="btc-qr" width="168" height="168" alt="Bitcoin tip QR code" />
               <div class="tip-copy">
-                <code class="btc-address" id="btcAddress">REPLACE_WITH_BTC_ADDRESS</code>
+                <code class="btc-address" id="btcAddress"></code>
                 <button type="button" class="btn btn-secondary" id="btnCopyBtc">Copy address</button>
               </div>
             </div>

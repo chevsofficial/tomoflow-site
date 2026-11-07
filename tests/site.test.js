@@ -52,7 +52,9 @@ test('storage fallback remembers only a server-verified unlock when writes fail'
 });
 test('timer controls and settings remain wired; unconfigured tips make no QR request', () => {
   const app = timer();
-  assert.equal(app.el('tip').hidden, true);
+  assert.equal(app.el('tip').hidden, false);
+  assert.equal(app.el('btcPayment').hidden, true);
+  assert.equal(app.el('btcUnavailable').hidden, false);
   assert.equal(app.elements.has('btcQr'), false);
   app.el('btnStart').listeners.click();
   assert.equal(app.el('btnStart').disabled, true);
